@@ -19,7 +19,7 @@ function extractJSON(text: string): string {
     // First attempt: try parsing as-is
     JSON.parse(jsonStr)
     return jsonStr
-  } catch (e) {
+  } catch {
     console.log('Initial parse failed, attempting to clean JSON...')
     
     try {
@@ -79,7 +79,7 @@ function rebuildJSON(text: string): string {
   }, null, 2)
 }
 
-function extractArray(text: string, key: string): any[] {
+function extractArray(text: string, key: string): string[] {
   try {
     const regex = new RegExp(`"${key}"\\s*:\\s*(\\[([^\\]]+)\\])`)
     const match = text.match(regex)
@@ -87,10 +87,23 @@ function extractArray(text: string, key: string): any[] {
       const arrayStr = match[1]
       return JSON.parse(arrayStr)
     }
-  } catch (e) {
-    console.error(`Failed to extract ${key} array:`, e)
+  } catch (error) {
+    console.error(`Failed to extract ${key} array:`, error)
   }
   return []
+}
+
+interface PerplexityResponse {
+  text: string
+  links: Array<{
+    title: string
+    url: string
+  }>
+  choices: Array<{
+    message: {
+      content: string
+    }
+  }>
 }
 
 export async function POST(req: Request) {
@@ -134,7 +147,7 @@ export async function POST(req: Request) {
       }),
     })
 
-    const data = await response.json()
+    const data: PerplexityResponse = await response.json()
     console.log('Perplexity API Response:', data)
 
     if (!response.ok) {
@@ -176,18 +189,20 @@ export async function POST(req: Request) {
         console.error('Raw content:', content)
         return NextResponse.json({ 
           error: 'Invalid response format',
-          details: e.message,
+          details: e instanceof Error ? e.message : 'Unknown error',
           raw: content
         }, { status: 422 })
       }
     } catch (error) {
       console.group('Person Info API Error')
       console.error('Error:', error)
-      console.error('Stack:', error.stack)
+      if (error instanceof Error) {
+        console.error('Stack:', error.stack)
+      }
       console.groupEnd()
       return NextResponse.json({ 
         error: 'Failed to fetch person information',
-        details: error.message
+        details: error instanceof Error ? error.message : 'Unknown error'
       }, { status: 500 })
     }
 
@@ -195,11 +210,13 @@ export async function POST(req: Request) {
   } catch (error) {
     console.group('Person Info API Error')
     console.error('Error:', error)
-    console.error('Stack:', error.stack)
+    if (error instanceof Error) {
+      console.error('Stack:', error.stack)
+    }
     console.groupEnd()
     return NextResponse.json({ 
       error: 'Failed to fetch person information',
-      details: error.message
+      details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })
   }
 } 

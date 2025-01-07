@@ -6,15 +6,13 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2 } from "lucide-react"
-import ReactMarkdown from 'react-markdown'
-import axios from 'axios'
+import { Loader2, ChevronDown, ChevronUp } from "lucide-react"
 import { PromptEditor } from "@/components/prompt-editor"
 import { PersonCard } from "@/components/person-card"
-import { HistoryCard } from "@/components/history-card"
 import { LoadingIndicator } from "@/components/loading-indicator"
 import { motion } from "framer-motion"
-import { ChevronDown, ChevronUp } from "lucide-react"
+import Image from 'next/image'
+import { PersonInfo } from "@/types"
 
 interface LoadingState {
   profilePic: boolean
@@ -26,10 +24,18 @@ interface LoadingState {
 interface RowData {
   col1: string
   col2: string
-  info?: any
+  info: PersonInfo | null
   loading?: boolean
   profilePic?: string
   loadingStates?: LoadingState
+}
+
+const defaultInfo: PersonInfo = {
+  currentRole: "",
+  keyAchievements: [],
+  professionalBackground: "",
+  previousRoles: [],
+  expertiseAreas: []
 }
 
 export default function Home() {
@@ -37,6 +43,7 @@ export default function Home() {
     { 
       col1: "Amir Jaffari", 
       col2: "Shopify",
+      info: null,
       loadingStates: {
         profilePic: false,
         perplexity: false,
@@ -69,103 +76,84 @@ export default function Home() {
   ]
 }`
   )
-  const [histories, setHistories] = React.useState<{[key: number]: {
-    history: string | null
-    loading: boolean
-    error?: string
-  }}>({})
   const [isPromptOpen, setIsPromptOpen] = React.useState(false)
   const [isBulkOpen, setIsBulkOpen] = React.useState(false)
 
   const handleRowChange = (index: number, column: 'col1' | 'col2', value: string) => {
-    const newRows = [...rows]
-    newRows[index][column] = value
-    setRows(newRows)
+    if (index < 0 || index >= rows.length) return  // Bounds check
+    
+    setRows(prev => {
+      const newRows = [...prev]
+      newRows[index] = {
+        ...newRows[index],
+        [column]: value
+      }
+      return newRows
+    })
   }
 
   const addRow = () => {
-    setRows([...rows, { col1: "", col2: "" }])
+    setRows([...rows, { 
+      col1: "", 
+      col2: "", 
+      info: null,
+      loadingStates: {
+        profilePic: false,
+        perplexity: false,
+        rocketReach: false,
+        openai: false
+      }
+    }])
   }
 
   const removeRow = (index: number) => {
     const newRows = rows.filter((_, i) => i !== index)
-    setRows(newRows.length ? newRows : [{ col1: "", col2: "" }])
+    setRows(newRows.length ? newRows : [{
+      col1: "",
+      col2: "",
+      info: null,
+      loadingStates: {
+        profilePic: false,
+        perplexity: false,
+        rocketReach: false,
+        openai: false
+      }
+    }])
   }
 
   const handleBulkPaste = () => {
     const lines = bulkInput.trim().split('\n')
     const newRows = lines.map(line => {
       const [col1 = "", col2 = ""] = line.split('\t')
-      return { col1: col1.trim(), col2: col2.trim() }
+      return {
+        col1: col1.trim(),
+        col2: col2.trim(),
+        info: null,
+        loadingStates: {
+          profilePic: false,
+          perplexity: false,
+          rocketReach: false,
+          openai: false
+        }
+      }
     })
-    setRows(newRows.length ? newRows : [{ col1: "", col2: "" }])
+    setRows(newRows.length ? newRows : [{
+      col1: "",
+      col2: "",
+      info: null,
+      loadingStates: {
+        profilePic: false,
+        perplexity: false,
+        rocketReach: false,
+        openai: false
+      }
+    }])
     setBulkInput("")
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     console.log("Submitted data:", rows)
-  }
-
-  const fetchProfilePic = async (name: string, company: string) => {
-    try {
-      // Log Serper API request
-      console.group('Profile Picture - Serper API Request')
-      console.log('Endpoint:', '/api/profile-pic')
-      console.log('Payload:', { name, company })
-      console.groupEnd()
-
-      const response = await fetch('/api/profile-pic', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name, company }),
-      })
-
-      const data = await response.json()
-
-      // Log Serper API response
-      console.group('Profile Picture - Serper API Response')
-      console.log('Status:', response.status)
-      console.log('Data:', data)
-      console.groupEnd()
-
-      if (!data.imageUrl) return null
-
-      // Log image proxy request
-      console.group('Profile Picture - Image Proxy Request')
-      console.log('Endpoint:', '/api/image-proxy')
-      console.log('Payload:', { imageUrl: data.imageUrl })
-      console.groupEnd()
-
-      const proxyResponse = await fetch('/api/image-proxy', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ imageUrl: data.imageUrl }),
-      })
-
-      const proxyData = await proxyResponse.json()
-
-      // Log image proxy response
-      console.group('Profile Picture - Image Proxy Response')
-      console.log('Status:', proxyResponse.status)
-      console.log('Data:', {
-        ...proxyData,
-        proxiedUrl: proxyData.proxiedUrl ? proxyData.proxiedUrl.substring(0, 100) + '...' : null
-      })
-      console.groupEnd()
-
-      return proxyData.proxiedUrl
-    } catch (error) {
-      console.group('Profile Picture Error')
-      console.error('Error:', error)
-      console.error('Stack:', error.stack)
-      console.groupEnd()
-      return null
-    }
   }
 
   const resetPrompt = () => {
@@ -222,6 +210,9 @@ export default function Home() {
         body: JSON.stringify({ name: row.col1, company: row.col2 }),
       })
       const profileData = await profileResponse.json()
+      if (!profileResponse.ok) {
+        throw new Error(profileData.error || 'Failed to fetch profile information')
+      }
 
       // Update loading state for Perplexity
       setRows(prev => {
@@ -229,9 +220,10 @@ export default function Home() {
         newRows[index] = { 
           ...newRows[index], 
           loadingStates: {
-            ...newRows[index].loadingStates,
             profilePic: false,
-            perplexity: true
+            perplexity: true,
+            rocketReach: false,
+            openai: false
           }
         }
         return newRows
@@ -250,6 +242,9 @@ export default function Home() {
         body: JSON.stringify(personInfoPayload)
       })
       const perplexityData = await infoResponse.json()
+      if (!infoResponse.ok) {
+        throw new Error(perplexityData.error || 'Failed to fetch person information')
+      }
 
       // Update loading state for RocketReach
       setRows(prev => {
@@ -257,9 +252,10 @@ export default function Home() {
         newRows[index] = { 
           ...newRows[index], 
           loadingStates: {
-            ...newRows[index].loadingStates,
+            profilePic: false,
             perplexity: false,
-            rocketReach: true
+            rocketReach: true,
+            openai: false
           }
         }
         return newRows
@@ -273,6 +269,9 @@ export default function Home() {
           body: JSON.stringify({ url: profileData.rocketReachUrl })
         })
         const historyData = await historyResponse.json()
+        if (!historyResponse.ok) {
+          throw new Error(historyData.error || 'Failed to fetch history information')
+        }
         if (!historyData.error) {
           rocketReachData = historyData.history
         }
@@ -284,7 +283,8 @@ export default function Home() {
         newRows[index] = { 
           ...newRows[index], 
           loadingStates: {
-            ...newRows[index].loadingStates,
+            profilePic: false,
+            perplexity: false,
             rocketReach: false,
             openai: true
           }
@@ -342,13 +342,11 @@ export default function Home() {
             openai: false
           },
           info: {
-            currentRole: error.message || "Error fetching information",
+            currentRole: error instanceof Error ? error.message : "Error fetching information",
             keyAchievements: [],
             professionalBackground: "An error occurred while fetching the data. Please try again.",
             expertiseAreas: [],
-            previousRoles: [],
-            linkedInUrl: null,
-            rocketReachUrl: null
+            previousRoles: []
           }
         }
         return newRows
@@ -364,7 +362,7 @@ export default function Home() {
             Person Info Finder
           </h1>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Enter a person's name and company to find information about them
+            Enter a person&apos;s name and company to find information about them
           </p>
         </section>
 
@@ -474,21 +472,30 @@ export default function Home() {
                             <Loader2 className="h-6 w-6 animate-spin" />
                           </div>
                         ) : row.profilePic ? (
-                          <img 
+                          <Image 
                             src={row.profilePic} 
-                            alt={`${row.col1}'s profile`}
-                            className="w-12 h-12 rounded-full object-cover"
+                            alt=""
+                            width={48}
+                            height={48}
+                            className="rounded-full object-cover"
                           />
                         ) : (
                           <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                            {row.col1 ? row.col1[0].toUpperCase() : '?'}
+                            {row.col1 ? row.col1[0].toUpperCase() : "—"}
                           </div>
                         )}
                       </TableCell>
                       <TableCell className="min-w-[400px]">
                         {row.loading ? (
                           <div className="space-y-8">
-                            <LoadingIndicator loadingStates={row.loadingStates!} />
+                            <LoadingIndicator 
+                              loadingStates={{
+                                profilePic: row.loadingStates?.profilePic ?? false,
+                                perplexity: row.loadingStates?.perplexity ?? false,
+                                rocketReach: row.loadingStates?.rocketReach ?? false,
+                                openai: row.loadingStates?.openai ?? false
+                              }} 
+                            />
                             <motion.div 
                               initial={{ opacity: 0, y: 10 }}
                               animate={{ opacity: 1, y: 0 }}
@@ -518,9 +525,8 @@ export default function Home() {
                           <PersonCard
                             name={row.col1}
                             company={row.col2}
-                            info={row.info}
+                            info={row.info || defaultInfo}
                             profilePic={row.profilePic}
-                            loading={row.loading}
                           />
                         ) : (
                           "No information yet"

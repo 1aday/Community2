@@ -1,12 +1,6 @@
 import { NextResponse } from 'next/server'
 import axios from 'axios'
 
-interface SerperImage {
-  imageUrl: string
-  link: string
-  source: string
-}
-
 interface SerperResult {
   title: string
   link: string
@@ -27,10 +21,12 @@ function validateRocketReachResult(result: SerperResult, name: string, company: 
   const hasName = nameParts.every(part => title.includes(part))
   
   // Check if company name is in title or snippet
-  const hasCompany = title.includes(searchCompany) || 
-                    (result.snippet && result.snippet.toLowerCase().includes(searchCompany))
+  const hasCompanyInTitle = title.includes(searchCompany)
+  const hasCompanyInSnippet = result.snippet ? 
+    result.snippet.toLowerCase().includes(searchCompany) : 
+    false
   
-  return hasName && hasCompany
+  return hasName && (hasCompanyInTitle || hasCompanyInSnippet)
 }
 
 export async function POST(req: Request) {

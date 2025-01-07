@@ -4,73 +4,16 @@ import { Badge } from "@/components/ui/badge"
 import { Linkedin, Rocket, MapPin, Calendar, ChevronDown, ChevronUp, GraduationCap, Award } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-
-interface CurrentRole {
-  title: string
-  company: string
-  location?: string
-  duration: string
-  responsibilities: string[]
-}
-
-interface PreviousRole {
-  title: string
-  company: string
-  location?: string
-  duration: string
-  highlights: string[]
-  technologies?: string[]
-}
-
-interface Education {
-  degree: string
-  institution: string
-  field: string
-  year: string
-  achievements: string[]
-}
-
-interface Certification {
-  name: string
-  issuer: string
-  year: string
-  status: string
-}
-
-interface Language {
-  language: string
-  proficiency: string
-}
-
-interface Skills {
-  technical: string[]
-  leadership: string[]
-  domain: string[]
-}
-
-interface PersonInfo {
-  currentRole: CurrentRole | string
-  keyAchievements: string[]
-  professionalBackground: string
-  previousRoles: PreviousRole[]
-  expertiseAreas: string[]
-  education?: Education[]
-  certifications?: Certification[]
-  languages?: Language[]
-  skills?: Skills
-  linkedInUrl?: string
-  rocketReachUrl?: string
-}
+import { PersonInfo } from "@/types"
 
 interface PersonCardProps {
   name: string
   company: string
   info: PersonInfo
   profilePic?: string
-  loading?: boolean
 }
 
-export function PersonCard({ name, company, info, profilePic, loading }: PersonCardProps) {
+export function PersonCard({ name, company, info, profilePic }: PersonCardProps) {
   const [showAllRoles, setShowAllRoles] = React.useState(false)
   const currentRole = typeof info.currentRole === 'object' ? info.currentRole : null
   
