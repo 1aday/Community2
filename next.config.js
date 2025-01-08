@@ -18,6 +18,15 @@ const nextConfig = {
     }
     return config
   },
+  serverRuntimeConfig: {
+    // Will only be available on the server side
+    timeoutMs: 60000, // 60 seconds
+  },
+  experimental: {
+    serverActions: {
+      timeout: 60 // 60 seconds
+    }
+  }
 }
 
 module.exports = nextConfig 
