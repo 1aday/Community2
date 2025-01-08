@@ -324,10 +324,10 @@ export default function Home() {
           ...row,
           info: {
             ...processedData.info,
-            linkedInUrl: profileData.linkedInUrl,
+            linkedInUrl: profileData.linkedinUrl,
             rocketReachUrl: profileData.rocketReachUrl
           },
-          profilePic: profileData.imageUrl,
+          profilePic: profileData.profilePic,
           loading: false,
           loadingStates: {
             profilePic: false,
