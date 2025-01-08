@@ -40,8 +40,10 @@ const defaultInfo: PersonInfo = {
   currentRole: "",
   keyAchievements: [],
   professionalBackground: "",
-  previousRoles: [],
-  expertiseAreas: []
+  careerHistory: [],
+  expertiseAreas: [],
+  linkedInUrl: "",
+  rocketReachUrl: ""
 }
 
 export default function Home() {

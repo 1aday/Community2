@@ -1,44 +1,16 @@
+export interface Role {
+  title: string
+  company: string
+  duration: string
+  highlights: string[]
+}
+
 export interface PersonInfo {
-  currentRole: string | {
-    title: string
-    company: string
-    location?: string
-    duration: string
-    responsibilities: string[]
-  }
+  currentRole: string
   keyAchievements: string[]
   professionalBackground: string
-  previousRoles: Array<{
-    title: string
-    company: string
-    location?: string
-    duration: string
-    highlights: string[]
-    technologies?: string[]
-  }>
+  careerHistory: Role[]
   expertiseAreas: string[]
-  education?: Array<{
-    degree: string
-    institution: string
-    field: string
-    year: string
-    achievements: string[]
-  }>
-  certifications?: Array<{
-    name: string
-    issuer: string
-    year: string
-    status: string
-  }>
-  languages?: Array<{
-    language: string
-    proficiency: string
-  }>
-  skills?: {
-    technical: string[]
-    leadership: string[]
-    domain: string[]
-  }
   linkedInUrl?: string
   rocketReachUrl?: string
 } 
