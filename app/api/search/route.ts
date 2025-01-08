@@ -1,5 +1,17 @@
 import { NextResponse } from 'next/server'
 
+interface SerperResult {
+  link: string
+  // Add other properties if needed, but we only use link
+}
+
+interface SerperResponse {
+  organic?: SerperResult[]
+  images?: Array<{
+    imageUrl: string
+  }>
+}
+
 export async function POST(req: Request) {
   try {
     const { name, company } = await req.json()
@@ -26,12 +38,12 @@ export async function POST(req: Request) {
       body: JSON.stringify({ q: imageQuery })
     })
 
-    const profileData = await profileResponse.json()
-    const imageData = await imageResponse.json()
+    const profileData: SerperResponse = await profileResponse.json()
+    const imageData: SerperResponse = await imageResponse.json()
 
     // Get first result that matches RocketReach
     const rocketReachUrl = profileData.organic?.find(
-      (result: any) => result.link.includes('rocketreach.co')
+      (result) => result.link.includes('rocketreach.co')
     )?.link
 
     // Get first image result

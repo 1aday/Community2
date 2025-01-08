@@ -15,7 +15,7 @@ export async function POST(req: Request) {
       actions: [
         { type: "wait", milliseconds: 2000 },
         { type: "wait", selector: ".history-container" },
-        { type: "scrape" }
+        { type: "scrape", selector: ".history-container" }
       ]
     })
 

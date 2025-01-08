@@ -54,9 +54,11 @@ export async function POST(req: Request) {
             "currentRole": "string",
             "keyAchievements": ["string array of achievements"],
             "professionalBackground": "string",
-            "previousRoles": [{"title": "string", "company": "string", "duration": "string", "highlights": ["string array"]}],
+            "careerHistory": [{"title": "string", "company": "string", "duration": "string", "highlights": ["string array"]}],
             "expertiseAreas": ["string array of expertise"]
-          }`
+          }
+          
+          For careerHistory, include both current and previous roles in chronological order, most recent first.`
         },
         {
           role: "user",
@@ -64,7 +66,7 @@ export async function POST(req: Request) {
             Perplexity Data: ${JSON.stringify(perplexityData)}
             Career History: ${cleanedRocketReachData}
             
-            Combine both sources to create a complete profile. Use the career history to enhance and verify the information.
+            Combine both sources to create a complete profile. Use all available career history information.
             Return the information in the exact JSON structure specified.`
         }
       ],
