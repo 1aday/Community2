@@ -533,6 +533,8 @@ export default function Home() {
                             company={row.col2}
                             info={row.info || defaultInfo}
                             profilePic={row.profilePic}
+                            linkedinUrl={row.info.linkedInUrl}
+                            rocketReachUrl={row.info.rocketReachUrl}
                           />
                         ) : (
                           "No information yet"

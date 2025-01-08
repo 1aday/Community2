@@ -1,7 +1,7 @@
 import * as React from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Linkedin, Rocket, MapPin, Calendar, ChevronDown, ChevronUp, GraduationCap, Award } from "lucide-react"
+import { Linkedin, Rocket, MapPin, Calendar, Award } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 
@@ -25,25 +25,52 @@ interface PersonCardProps {
   profilePic?: string
   name: string
   location?: string
+  linkedinUrl?: string
+  rocketReachUrl?: string
 }
 
-export function PersonCard({ info, profilePic, name, location }: PersonCardProps) {
+export function PersonCard({ 
+  info, 
+  profilePic, 
+  name, 
+  location,
+  linkedinUrl,
+  rocketReachUrl 
+}: PersonCardProps) {
   return (
     <Card className="w-full">
       <CardHeader>
-        <div className="flex items-start gap-4">
-          <Avatar className="h-20 w-20">
-            <AvatarImage src={profilePic} alt={name} />
-            <AvatarFallback>{name[0]}</AvatarFallback>
-          </Avatar>
-          <div className="space-y-1">
-            <CardTitle className="text-2xl">{name}</CardTitle>
-            <CardDescription className="text-lg">{info.currentRole}</CardDescription>
-            {location && (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <MapPin className="h-4 w-4" />
-                <span>{location}</span>
-              </div>
+        <div className="flex items-start justify-between">
+          <div className="flex items-start gap-4">
+            <Avatar className="h-20 w-20">
+              <AvatarImage src={profilePic} alt={name} />
+              <AvatarFallback>{name[0]}</AvatarFallback>
+            </Avatar>
+            <div className="space-y-1">
+              <CardTitle className="text-2xl">{name}</CardTitle>
+              <CardDescription className="text-lg">{info.currentRole}</CardDescription>
+              {location && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <MapPin className="h-4 w-4" />
+                  <span>{location}</span>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            {linkedinUrl && (
+              <Button variant="outline" size="icon" asChild>
+                <a href={linkedinUrl} target="_blank" rel="noopener noreferrer">
+                  <Linkedin className="h-4 w-4" />
+                </a>
+              </Button>
+            )}
+            {rocketReachUrl && (
+              <Button variant="outline" size="icon" asChild>
+                <a href={rocketReachUrl} target="_blank" rel="noopener noreferrer">
+                  <Rocket className="h-4 w-4" />
+                </a>
+              </Button>
             )}
           </div>
         </div>
