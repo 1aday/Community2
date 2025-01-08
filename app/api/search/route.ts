@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 
 interface SerperResult {
   link: string
-  // Add other properties if needed, but we only use link
 }
 
 interface SerperResponse {
@@ -53,19 +52,20 @@ export async function POST(req: Request) {
       imageResponse.json()
     ])
 
-    // Get first result that matches RocketReach
+    // Get first result that matches RocketReach - but don't error if none found
     const rocketReachUrl = rocketData.organic?.find(
       (result: SerperResult) => result.link.includes('rocketreach.co')
-    )?.link
+    )?.link || null
 
     // Get first result that matches LinkedIn
     const linkedinUrl = linkedinData.organic?.find(
       (result: SerperResult) => result.link.includes('linkedin.com/in')
-    )?.link
+    )?.link || null
 
     // Get first image result
-    const profilePic = imageData.images?.[0]?.imageUrl
+    const profilePic = imageData.images?.[0]?.imageUrl || null
 
+    // Return all results, even if some are null
     return NextResponse.json({
       rocketReachUrl,
       linkedinUrl,

@@ -271,17 +271,19 @@ export default function Home() {
 
       let rocketReachData = null
       if (profileData.rocketReachUrl) {
-        const historyResponse = await fetch('/api/history', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: profileData.rocketReachUrl })
-        })
-        const historyData = await historyResponse.json()
-        if (!historyResponse.ok) {
-          throw new Error(historyData.error || 'Failed to fetch history information')
-        }
-        if (!historyData.error) {
-          rocketReachData = historyData.history
+        try {
+          const historyResponse = await fetch('/api/history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: profileData.rocketReachUrl })
+          })
+          const historyData = await historyResponse.json()
+          if (historyResponse.ok && !historyData.error) {
+            rocketReachData = historyData.history
+          }
+        } catch (error) {
+          console.warn('RocketReach data fetch failed:', error)
+          // Continue without RocketReach data
         }
       }
 
