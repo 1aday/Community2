@@ -26,7 +26,15 @@ export async function POST(req: Request) {
       temperature: 0.7,
     })
 
-    return NextResponse.json(completion.choices[0].message)
+    return NextResponse.json({ 
+      info: {
+        currentRole: perplexityData.currentRole || "",
+        keyAchievements: perplexityData.keyAchievements || [],
+        professionalBackground: perplexityData.professionalBackground || "",
+        previousRoles: perplexityData.previousRoles || [],
+        expertiseAreas: perplexityData.expertiseAreas || []
+      }
+    })
 
   } catch (error) {
     console.error('Processing Error:', error)
