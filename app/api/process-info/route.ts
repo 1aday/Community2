@@ -2,37 +2,79 @@ import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY
 })
+
+function cleanRocketReachData(data: string): string {
+  return data
+    // Remove markdown links
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    // Remove image references
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
+    // Remove escaped quotes
+    .replace(/\\"/g, '"')
+    // Remove HTML entities
+    .replace(/&quot;/g, '"')
+    // Remove markdown formatting
+    .replace(/#{1,6}\s/g, '')
+    // Clean up multiple spaces and newlines
+    .replace(/\s+/g, ' ')
+    .trim()
+}
 
 export async function POST(req: Request) {
   try {
     const { perplexityData, rocketReachData } = await req.json()
 
+    // Log the incoming data to verify what we're receiving
+    console.log('Processing Info:')
+    console.log('Perplexity Data:', perplexityData)
+    console.log('RocketReach Data:', rocketReachData)
+
+    // Make sure we have the RocketReach data
+    if (!rocketReachData) {
+      return NextResponse.json({ 
+        error: 'Missing RocketReach data',
+        details: 'RocketReach data is required for processing'
+      }, { status: 400 })
+    }
+
+    // Clean up the RocketReach data
+    const cleanedRocketReachData = cleanRocketReachData(rocketReachData)
+    console.log('Cleaned RocketReach Data:', cleanedRocketReachData)
+
     const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
-          content: "You are a helpful assistant that processes and combines information about people."
+          content: `You are a helpful assistant that processes and combines information about people. DO NOT say whats unknown. Be detailed.
+          Always return information in this exact JSON structure:
+          {
+            "currentRole": "string",
+            "keyAchievements": ["string array of achievements"],
+            "professionalBackground": "string",
+            "previousRoles": [{"title": "string", "company": "string", "duration": "string", "highlights": ["string array"]}],
+            "expertiseAreas": ["string array of expertise"]
+          }`
         },
         {
           role: "user",
-          content: `Please combine and process this information about a person:
+          content: `Please use this information about a person:
             Perplexity Data: ${JSON.stringify(perplexityData)}
-            RocketReach Data: ${rocketReachData}`
+            Career History: ${cleanedRocketReachData}
+            
+            Combine both sources to create a complete profile. Use the career history to enhance and verify the information.
+            Return the information in the exact JSON structure specified.`
         }
       ],
-      temperature: 0.7,
+      temperature: 0.1,
+      response_format: { type: "json_object" }
     })
 
-    // Use the original perplexity data structure but enhance it with AI insights
-    return NextResponse.json({ 
-      info: {
-        ...perplexityData,  // Keep all the original structured data
-        content: completion.choices[0].message.content // Add AI insights as additional content
-      }
-    })
+    // Parse the JSON response and wrap it in the expected structure
+    const processedInfo = JSON.parse(completion.choices[0].message.content)
+    return NextResponse.json({ info: processedInfo })
 
   } catch (error) {
     console.error('Processing Error:', error)
