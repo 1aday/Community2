@@ -5,9 +5,11 @@ import ReactMarkdown from 'react-markdown'
 
 interface HistoryCardProps {
   history: string
+  loading?: boolean
+  error?: string
 }
 
-export function HistoryCard({ history }: HistoryCardProps) {
+export function HistoryCard({ history, loading, error }: HistoryCardProps) {
   return (
     <Card>
       <CardHeader>
