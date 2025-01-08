@@ -47,7 +47,7 @@ export async function POST(req: Request) {
       })
     ])
 
-    const [rocketData, linkedinData, imageData] = await Promise.all([
+    const [rocketData, linkedinData, imageData]: [SerperResponse, SerperResponse, SerperResponse] = await Promise.all([
       rocketResponse.json(),
       linkedinResponse.json(),
       imageResponse.json()

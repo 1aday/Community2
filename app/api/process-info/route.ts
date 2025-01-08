@@ -74,8 +74,13 @@ export async function POST(req: Request) {
       response_format: { type: "json_object" }
     })
 
+    const content = completion.choices[0].message.content
+    if (!content) {
+      throw new Error('OpenAI response missing content')
+    }
+
     // Parse the JSON response and wrap it in the expected structure
-    const processedInfo = JSON.parse(completion.choices[0].message.content)
+    const processedInfo = JSON.parse(content)
     return NextResponse.json({ info: processedInfo })
 
   } catch (error) {
