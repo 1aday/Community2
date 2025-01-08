@@ -30,6 +30,12 @@ interface RowData {
   loadingStates?: LoadingState
 }
 
+interface ApiResponse {
+  info: PersonInfo
+  error?: string
+  details?: string
+}
+
 const defaultInfo: PersonInfo = {
   currentRole: "",
   keyAchievements: [],
