@@ -38,12 +38,6 @@ const defaultInfo: PersonInfo = {
   expertiseAreas: []
 }
 
-interface ApiResponse {
-  info: PersonInfo
-  error?: string
-  details?: string
-}
-
 export default function Home() {
   const [rows, setRows] = React.useState<RowData[]>([
     { 
@@ -307,7 +301,7 @@ export default function Home() {
           rocketReachData
         })
       })
-      const processedData = await processResponse.json()
+      const processedData: ApiResponse = await processResponse.json()
 
       if (!processResponse.ok) {
         throw new Error(processedData.details || processedData.error || 'Failed to process information')
