@@ -69,7 +69,7 @@ export default function Home() {
     "string - notable accomplishments in current and past roles"
   ],
   "professionalBackground": "string - comprehensive career narrative",
-  "previousRoles": [
+  "careerHistory": [
     {
       "title": "string - job title",
       "company": "string - company name",
@@ -173,7 +173,7 @@ export default function Home() {
     "string - notable accomplishments in current and past roles"
   ],
   "professionalBackground": "string - comprehensive career narrative",
-  "previousRoles": [
+  "careerHistory": [
     {
       "title": "string - job title",
       "company": "string - company name",
@@ -354,7 +354,9 @@ export default function Home() {
             keyAchievements: [],
             professionalBackground: "An error occurred while fetching the data. Please try again.",
             expertiseAreas: [],
-            previousRoles: []
+            careerHistory: [],
+            linkedInUrl: "",
+            rocketReachUrl: ""
           }
         }
         return newRows
