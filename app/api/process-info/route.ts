@@ -9,6 +9,7 @@ export async function POST(req: Request) {
   try {
     const { perplexityData, rocketReachData } = await req.json()
 
+    // Get AI insights about the person
     const completion = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
@@ -26,13 +27,19 @@ export async function POST(req: Request) {
       temperature: 0.7,
     })
 
+    // Combine AI insights with existing data
+    const processedInfo = {
+      ...perplexityData,
+      professionalBackground: completion.choices[0].message.content || perplexityData.professionalBackground
+    }
+
     return NextResponse.json({ 
       info: {
-        currentRole: perplexityData.currentRole || "",
-        keyAchievements: perplexityData.keyAchievements || [],
-        professionalBackground: perplexityData.professionalBackground || "",
-        previousRoles: perplexityData.previousRoles || [],
-        expertiseAreas: perplexityData.expertiseAreas || []
+        currentRole: processedInfo.currentRole || "",
+        keyAchievements: processedInfo.keyAchievements || [],
+        professionalBackground: processedInfo.professionalBackground || "",
+        previousRoles: processedInfo.previousRoles || [],
+        expertiseAreas: processedInfo.expertiseAreas || []
       }
     })
 
