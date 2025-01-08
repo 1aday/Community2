@@ -13,6 +13,31 @@ interface SerperResponse {
   }>
 }
 
+async function validateRocketReachPage(url: string, name: string, company: string): Promise<boolean> {
+  try {
+    const response = await fetch(url)
+    const html = await response.text()
+    
+    // Extract title from HTML
+    const titleMatch = html.match(/<title>(.*?)<\/title>/)
+    if (!titleMatch) return false
+    
+    const pageTitle = titleMatch[1].toLowerCase()
+    const searchName = name.toLowerCase()
+    const searchCompany = company.toLowerCase()
+    
+    // Split name into parts to check for full name
+    const nameParts = searchName.split(' ')
+    const hasFullName = nameParts.every(part => pageTitle.includes(part))
+    
+    // Check if both full name and company appear in the page title
+    return hasFullName && pageTitle.includes(searchCompany)
+  } catch (error) {
+    console.warn('Failed to validate RocketReach page:', error)
+    return false
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const { name, company } = await req.json()
@@ -54,28 +79,34 @@ export async function POST(req: Request) {
       imageResponse.json()
     ])
 
-    // Validate RocketReach result by checking name and company in title or snippet
-    const rocketReachUrl = rocketData.organic?.find(result => {
+    // First validate through Serper results
+    const potentialRocketReachUrl = rocketData.organic?.find(result => {
       if (!result.link.includes('rocketreach.co')) return false
       
-      // Convert everything to lowercase for comparison
       const title = result.title?.toLowerCase() || ''
       const snippet = result.snippet?.toLowerCase() || ''
       const searchName = name.toLowerCase()
       const searchCompany = company.toLowerCase()
       
-      // Split name into parts to check for full name
       const nameParts = searchName.split(' ')
       const hasFullName = nameParts.every(part => 
         title.includes(part) || snippet.includes(part)
       )
       
-      // Check if both full name and company appear in either title or snippet
       return hasFullName && (
         title.includes(searchCompany) || 
         snippet.includes(searchCompany)
       )
     })?.link || null
+
+    // If we found a potential URL, validate it by checking the actual page
+    let rocketReachUrl = null
+    if (potentialRocketReachUrl) {
+      const isValid = await validateRocketReachPage(potentialRocketReachUrl, name, company)
+      if (isValid) {
+        rocketReachUrl = potentialRocketReachUrl
+      }
+    }
 
     // Get first result that matches LinkedIn
     const linkedinUrl = linkedinData.organic?.find(

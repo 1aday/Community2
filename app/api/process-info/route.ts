@@ -7,17 +7,11 @@ const openai = new OpenAI({
 
 function cleanRocketReachData(data: string): string {
   return data
-    // Remove markdown links
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-    // Remove image references
     .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
-    // Remove escaped quotes
     .replace(/\\"/g, '"')
-    // Remove HTML entities
     .replace(/&quot;/g, '"')
-    // Remove markdown formatting
     .replace(/#{1,6}\s/g, '')
-    // Clean up multiple spaces and newlines
     .replace(/\s+/g, ' ')
     .trim()
 }
@@ -26,21 +20,12 @@ export async function POST(req: Request) {
   try {
     const { perplexityData, rocketReachData } = await req.json()
 
-    // Log the incoming data to verify what we're receiving
     console.log('Processing Info:')
     console.log('Perplexity Data:', perplexityData)
     console.log('RocketReach Data:', rocketReachData)
 
-    // Make sure we have the RocketReach data
-    if (!rocketReachData) {
-      return NextResponse.json({ 
-        error: 'Missing RocketReach data',
-        details: 'RocketReach data is required for processing'
-      }, { status: 400 })
-    }
-
-    // Clean up the RocketReach data
-    const cleanedRocketReachData = cleanRocketReachData(rocketReachData)
+    // RocketReach data is now optional
+    const cleanedRocketReachData = rocketReachData ? cleanRocketReachData(rocketReachData) : ''
     console.log('Cleaned RocketReach Data:', cleanedRocketReachData)
 
     const completion = await openai.chat.completions.create({
@@ -64,9 +49,12 @@ export async function POST(req: Request) {
           role: "user",
           content: `Please use this information about a person:
             Perplexity Data: ${JSON.stringify(perplexityData)}
-            Career History: ${cleanedRocketReachData}
+            ${rocketReachData ? `Career History: ${cleanedRocketReachData}` : ''}
             
-            Combine both sources to create a complete profile. Use all available career history information.
+            ${rocketReachData 
+              ? 'Combine both sources to create a complete profile. Use all available career history information.'
+              : 'Create a profile based on the available information.'
+            }
             Return the information in the exact JSON structure specified.`
         }
       ],
