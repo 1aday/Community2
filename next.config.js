@@ -4,9 +4,29 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'media.licdn.com',
-        pathname: '/**',
+        hostname: 'd2gjqh9j26unp0.cloudfront.net',
       },
+      {
+        protocol: 'https',
+        hostname: 'd1hbpr09pwz0sk.cloudfront.net',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.linkedin.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.googleusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'media.licdn.com',
+      },
+      // Add any other domains that might serve profile pictures
+      {
+        protocol: 'https',
+        hostname: '**.cloudfront.net',
+      }
     ],
   },
   webpack: (config, { isServer }) => {

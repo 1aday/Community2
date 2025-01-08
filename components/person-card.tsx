@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Linkedin, Rocket, MapPin, Calendar, Award } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import Image from 'next/image'
 
 interface Role {
   title: string
@@ -43,7 +44,15 @@ export function PersonCard({
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-4">
             <Avatar className="h-20 w-20">
-              <AvatarImage src={profilePic} alt={name} />
+              <AvatarImage asChild>
+                <Image 
+                  src={profilePic || ''} 
+                  alt={name}
+                  width={80}
+                  height={80}
+                  className="object-cover"
+                />
+              </AvatarImage>
               <AvatarFallback>{name[0]}</AvatarFallback>
             </Avatar>
             <div className="space-y-1">
