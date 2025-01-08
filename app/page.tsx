@@ -534,7 +534,6 @@ export default function Home() {
                         ) : row.info ? (
                           <PersonCard
                             name={row.col1}
-                            company={row.col2}
                             info={row.info || defaultInfo}
                             profilePic={row.profilePic}
                             linkedinUrl={row.info.linkedInUrl}
