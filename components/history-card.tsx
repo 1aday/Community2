@@ -4,12 +4,10 @@ import { Loader2 } from "lucide-react"
 import ReactMarkdown from 'react-markdown'
 
 interface HistoryCardProps {
-  history: string | null
-  loading?: boolean
-  error?: string
+  history: string
 }
 
-export function HistoryCard({ history, loading, error }: HistoryCardProps) {
+export function HistoryCard({ history }: HistoryCardProps) {
   return (
     <Card>
       <CardHeader>

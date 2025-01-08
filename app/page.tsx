@@ -38,6 +38,12 @@ const defaultInfo: PersonInfo = {
   expertiseAreas: []
 }
 
+interface ApiResponse {
+  info: PersonInfo
+  error?: string
+  details?: string
+}
+
 export default function Home() {
   const [rows, setRows] = React.useState<RowData[]>([
     { 
