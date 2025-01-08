@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 
 interface SerperResult {
   link: string
+  title?: string
 }
 
 interface SerperResponse {
@@ -52,10 +53,18 @@ export async function POST(req: Request) {
       imageResponse.json()
     ])
 
-    // Get first result that matches RocketReach - but don't error if none found
-    const rocketReachUrl = rocketData.organic?.find(
-      (result: SerperResult) => result.link.includes('rocketreach.co')
-    )?.link || null
+    // Validate RocketReach result by checking name and company in title
+    const rocketReachUrl = rocketData.organic?.find(result => {
+      if (!result.title || !result.link.includes('rocketreach.co')) return false
+      
+      // Convert everything to lowercase for comparison
+      const title = result.title.toLowerCase()
+      const searchName = name.toLowerCase()
+      const searchCompany = company.toLowerCase()
+      
+      // Check if both name and company appear in the title
+      return title.includes(searchName) && title.includes(searchCompany)
+    })?.link || null
 
     // Get first result that matches LinkedIn
     const linkedinUrl = linkedinData.organic?.find(
