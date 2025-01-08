@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 interface SerperResult {
   link: string
   title?: string
+  snippet?: string
 }
 
 interface SerperResponse {
@@ -53,17 +54,27 @@ export async function POST(req: Request) {
       imageResponse.json()
     ])
 
-    // Validate RocketReach result by checking name and company in title
+    // Validate RocketReach result by checking name and company in title or snippet
     const rocketReachUrl = rocketData.organic?.find(result => {
-      if (!result.title || !result.link.includes('rocketreach.co')) return false
+      if (!result.link.includes('rocketreach.co')) return false
       
       // Convert everything to lowercase for comparison
-      const title = result.title.toLowerCase()
+      const title = result.title?.toLowerCase() || ''
+      const snippet = result.snippet?.toLowerCase() || ''
       const searchName = name.toLowerCase()
       const searchCompany = company.toLowerCase()
       
-      // Check if both name and company appear in the title
-      return title.includes(searchName) && title.includes(searchCompany)
+      // Split name into parts to check for full name
+      const nameParts = searchName.split(' ')
+      const hasFullName = nameParts.every(part => 
+        title.includes(part) || snippet.includes(part)
+      )
+      
+      // Check if both full name and company appear in either title or snippet
+      return hasFullName && (
+        title.includes(searchCompany) || 
+        snippet.includes(searchCompany)
+      )
     })?.link || null
 
     // Get first result that matches LinkedIn
