@@ -38,22 +38,25 @@ export function PersonCard({
   linkedinUrl,
   rocketReachUrl 
 }: PersonCardProps) {
+  const [isExpanded, setIsExpanded] = React.useState(false)
+
   return (
     <Card className="w-full">
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-4">
             <Avatar className="h-20 w-20">
-              <AvatarImage asChild>
-                <Image 
-                  src={profilePic || ''} 
+              {profilePic ? (
+                <AvatarImage 
+                  src={profilePic}
                   alt={name}
-                  width={80}
-                  height={80}
                   className="object-cover"
                 />
-              </AvatarImage>
-              <AvatarFallback>{name[0]}</AvatarFallback>
+              ) : (
+                <AvatarFallback>
+                  {name ? name[0].toUpperCase() : '?'}
+                </AvatarFallback>
+              )}
             </Avatar>
             <div className="space-y-1">
               <CardTitle className="text-2xl">{name}</CardTitle>
@@ -112,7 +115,7 @@ export function PersonCard({
             Career History
           </h3>
           <div className="space-y-4 mt-2">
-            {info.careerHistory.map((role, i) => (
+            {(isExpanded ? info.careerHistory : info.careerHistory.slice(0, 2)).map((role, i) => (
               <div key={i} className="border-l-2 border-muted pl-4">
                 <h4 className="font-medium">{role.title}</h4>
                 <p className="text-muted-foreground">{role.company} • {role.duration}</p>
@@ -126,6 +129,15 @@ export function PersonCard({
               </div>
             ))}
           </div>
+          {info.careerHistory.length > 2 && (
+            <Button
+              variant="ghost"
+              className="mt-2"
+              onClick={() => setIsExpanded(!isExpanded)}
+            >
+              {isExpanded ? "Show Less" : `Show ${info.careerHistory.length - 2} More Roles`}
+            </Button>
+          )}
         </div>
 
         {/* Expertise Areas */}

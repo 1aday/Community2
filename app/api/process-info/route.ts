@@ -18,48 +18,76 @@ function cleanRocketReachData(data: string): string {
 
 export async function POST(req: Request) {
   try {
-    const { perplexityData, rocketReachData } = await req.json()
-
+    const { perplexityData, rocketReachData: originalRocketReachData, name, company } = await req.json()
+    
     console.log('Processing Info:')
     console.log('Perplexity Data:', perplexityData)
-    console.log('RocketReach Data:', rocketReachData)
+    
+    let rocketReachData = originalRocketReachData
 
-    // RocketReach data is now optional
-    const cleanedRocketReachData = rocketReachData ? cleanRocketReachData(rocketReachData) : ''
+    // Simple validation - just check if title contains name and company
+    if (rocketReachData?.metadata) {
+      const title = (rocketReachData.metadata['og:title'] || '').toLowerCase()
+      const hasName = name.toLowerCase().split(' ').every(part => title.includes(part))
+      const hasCompany = title.includes(company.toLowerCase())
+
+      if (!hasName || !hasCompany) {
+        console.warn('Title validation failed:', { title, name, company })
+        rocketReachData = null
+      }
+    }
+
+    // Access the markdown directly from the validated data
+    const cleanedRocketReachData = rocketReachData?.markdown ? cleanRocketReachData(rocketReachData.markdown) : ''
     console.log('Cleaned RocketReach Data:', cleanedRocketReachData)
+
+    // Combine the data for OpenAI
+    const combinedData = {
+      ...perplexityData,
+      additionalInfo: cleanedRocketReachData
+    };
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
-          content: `You are a helpful assistant that processes and combines information about people. DO NOT say whats unknown. Be detailed.
-          Always return information in this exact JSON structure:
+          content: `You are a helpful assistant that processes and combines information about people. 
+          DO NOT MAKE UP ANY INFORMATION. Only use what is provided in the data sources.
+          
+          The RocketReach data contains career history information - use this as the primary source for work history.
+          The Perplexity data contains additional context and achievements.
+          
+          Return response in this exact JSON structure:
           {
             "currentRole": "string",
-            "keyAchievements": ["string array of achievements"],
+            "keyAchievements": ["string"],
             "professionalBackground": "string",
-            "careerHistory": [{"title": "string", "company": "string", "duration": "string", "highlights": ["string array"]}],
-            "expertiseAreas": ["string array of expertise"]
+            "careerHistory": [{"title": "string", "company": "string", "duration": "string", "highlights": ["string"]}],
+            "expertiseAreas": ["string"]
           }
           
-          For careerHistory, include both current and previous roles in chronological order, most recent first.`
+          Important: 
+          - The careerHistory array MUST include ALL roles found in the RocketReach data
+          - Order roles from most recent to oldest
+          - Only include factual information from the provided data sources
+          - Do not invent or assume any details`
         },
         {
           role: "user",
-          content: `Please use this information about a person:
-            Perplexity Data: ${JSON.stringify(perplexityData)}
-            ${rocketReachData ? `Career History: ${cleanedRocketReachData}` : ''}
+          content: `Here are the information sources about ${name} at ${company}:
             
-            ${rocketReachData 
-              ? 'Combine both sources to create a complete profile. Use all available career history information.'
-              : 'Create a profile based on the available information.'
-            }
-            Return the information in the exact JSON structure specified.`
+            RocketReach Career History:
+            ${cleanedRocketReachData}
+            
+            Additional Context from Perplexity:
+            ${JSON.stringify(perplexityData)}
+            
+            Extract and include ALL career history entries, especially from the RocketReach data.
+            Do not make up or assume any information not present in these sources.`
         }
       ],
-      temperature: 0.1,
-      response_format: { type: "json_object" }
+      temperature: 0.1
     })
 
     const content = completion.choices[0].message.content
@@ -72,10 +100,23 @@ export async function POST(req: Request) {
     return NextResponse.json({ info: processedInfo })
 
   } catch (error) {
-    console.error('Processing Error:', error)
-    return NextResponse.json({ 
-      error: 'Failed to process information',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
+    console.error("Error processing info:", error);
+    return NextResponse.json({ error: "Failed to process information" }, { status: 500 });
   }
+}
+
+// Helper functions
+function extractLocation(snippet: string): string | null {
+  const locationMatch = snippet.match(/based in ([^,]+)/i);
+  return locationMatch ? locationMatch[1].trim() : null;
+}
+
+function extractPreviousRoles(snippet: string): string[] {
+  const rolesMatch = snippet.match(/previous roles at ([^\.]+)/i);
+  if (!rolesMatch) return [];
+  
+  return rolesMatch[1]
+    .split(',')
+    .map(role => role.trim())
+    .filter(role => role !== '');
 } 

@@ -13,31 +13,6 @@ interface SerperResponse {
   }>
 }
 
-async function validateRocketReachPage(url: string, name: string, company: string): Promise<boolean> {
-  try {
-    const response = await fetch(url)
-    const html = await response.text()
-    
-    // Extract title from HTML
-    const titleMatch = html.match(/<title>(.*?)<\/title>/)
-    if (!titleMatch) return false
-    
-    const pageTitle = titleMatch[1].toLowerCase()
-    const searchName = name.toLowerCase()
-    const searchCompany = company.toLowerCase()
-    
-    // Split name into parts to check for full name
-    const nameParts = searchName.split(' ')
-    const hasFullName = nameParts.every(part => pageTitle.includes(part))
-    
-    // Check if both full name and company appear in the page title
-    return hasFullName && pageTitle.includes(searchCompany)
-  } catch (error) {
-    console.warn('Failed to validate RocketReach page:', error)
-    return false
-  }
-}
-
 export async function POST(req: Request) {
   try {
     const { name, company } = await req.json()
@@ -79,44 +54,26 @@ export async function POST(req: Request) {
       imageResponse.json()
     ])
 
-    // First validate through Serper results
-    const potentialRocketReachUrl = rocketData.organic?.find(result => {
-      if (!result.link.includes('rocketreach.co')) return false
-      
-      const title = result.title?.toLowerCase() || ''
-      const snippet = result.snippet?.toLowerCase() || ''
-      const searchName = name.toLowerCase()
-      const searchCompany = company.toLowerCase()
-      
-      const nameParts = searchName.split(' ')
-      const hasFullName = nameParts.every(part => 
-        title.includes(part) || snippet.includes(part)
-      )
-      
-      return hasFullName && (
-        title.includes(searchCompany) || 
-        snippet.includes(searchCompany)
-      )
-    })?.link || null
+    // Get first RocketReach result
+    const rocketReachUrl = rocketData.organic?.[0]?.link?.includes('rocketreach.co') 
+      ? rocketData.organic[0].link
+      : null
 
-    // If we found a potential URL, validate it by checking the actual page
-    let rocketReachUrl = null
-    if (potentialRocketReachUrl) {
-      const isValid = await validateRocketReachPage(potentialRocketReachUrl, name, company)
-      if (isValid) {
-        rocketReachUrl = potentialRocketReachUrl
-      }
-    }
-
-    // Get first result that matches LinkedIn
+    // Get first LinkedIn result
     const linkedinUrl = linkedinData.organic?.find(
       (result: SerperResult) => result.link.includes('linkedin.com/in')
     )?.link || null
 
-    // Get first image result
+    // Get first profile picture
     const profilePic = imageData.images?.[0]?.imageUrl || null
 
-    // Return all results, even if some are null
+    console.log('Search Results:', {
+      rocketReachUrl,
+      linkedinUrl,
+      profilePic
+    })
+
+    // Return all results
     return NextResponse.json({
       rocketReachUrl,
       linkedinUrl,

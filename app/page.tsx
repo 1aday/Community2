@@ -279,7 +279,7 @@ export default function Home() {
           })
           const historyData = await historyResponse.json()
           if (historyResponse.ok && !historyData.error) {
-            rocketReachData = historyData.history
+            rocketReachData = historyData
           }
         } catch (error) {
           console.warn('RocketReach data fetch failed:', error)
@@ -308,7 +308,9 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           perplexityData: perplexityData.info,
-          rocketReachData
+          rocketReachData: rocketReachData || null,
+          name: row.col1,
+          company: row.col2
         })
       })
       const processedData: ApiResponse = await processResponse.json()
@@ -324,10 +326,10 @@ export default function Home() {
           ...row,
           info: {
             ...processedData.info,
-            linkedInUrl: profileData.linkedinUrl,
+            linkedInUrl: profileData.linkedInUrl,
             rocketReachUrl: profileData.rocketReachUrl
           },
-          profilePic: profileData.profilePic,
+          profilePic: profileData.imageUrl,
           loading: false,
           loadingStates: {
             profilePic: false,
@@ -538,8 +540,8 @@ export default function Home() {
                             name={row.col1}
                             info={row.info || defaultInfo}
                             profilePic={row.profilePic}
-                            linkedinUrl={row.info.linkedInUrl}
-                            rocketReachUrl={row.info.rocketReachUrl}
+                            linkedinUrl={row.info?.linkedInUrl}
+                            rocketReachUrl={row.info?.rocketReachUrl}
                           />
                         ) : (
                           "No information yet"
