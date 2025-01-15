@@ -103,20 +103,4 @@ export async function POST(req: Request) {
     console.error("Error processing info:", error);
     return NextResponse.json({ error: "Failed to process information" }, { status: 500 });
   }
-}
-
-// Helper functions
-function extractLocation(snippet: string): string | null {
-  const locationMatch = snippet.match(/based in ([^,]+)/i);
-  return locationMatch ? locationMatch[1].trim() : null;
-}
-
-function extractPreviousRoles(snippet: string): string[] {
-  const rolesMatch = snippet.match(/previous roles at ([^\.]+)/i);
-  if (!rolesMatch) return [];
-  
-  return rolesMatch[1]
-    .split(',')
-    .map(role => role.trim())
-    .filter(role => role !== '');
 } 
