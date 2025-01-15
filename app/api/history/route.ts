@@ -2,6 +2,16 @@ import { NextResponse } from 'next/server'
 import FirecrawlApp from '@mendable/firecrawl-js'
 import { JSDOM } from 'jsdom'
 
+interface ScrapeResult {
+  success: boolean
+  error?: string
+  statusCode?: number
+  markdown?: string
+  html?: string
+  scrape_id?: string
+  formats?: string[]
+}
+
 const firecrawl = new FirecrawlApp({
   apiKey: process.env.FIRECRAWL_API_KEY || ''
 })
@@ -13,7 +23,7 @@ export async function POST(req: Request) {
     const scrapeResult = await firecrawl.scrapeUrl(url, {
       formats: ['markdown', 'html'],
       includeTags: ['.history-container']
-    })
+    }) as ScrapeResult
 
     if (!scrapeResult.success) {
       console.error('Firecrawl scrape failed:', {
@@ -66,16 +76,16 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error('History Error:', {
       message: error instanceof Error ? error.message : 'Unknown error',
-      statusCode: error instanceof Error && 'statusCode' in error ? error.statusCode : 500,
+      statusCode: error instanceof Error && 'statusCode' in error ? (error as any).statusCode : 500,
       stack: error instanceof Error ? error.stack : undefined
     })
     
     return NextResponse.json({ 
       error: 'Failed to fetch history',
       details: error instanceof Error ? error.message : 'Unknown error',
-      statusCode: error instanceof Error && 'statusCode' in error ? error.statusCode : 500
+      statusCode: error instanceof Error && 'statusCode' in error ? (error as any).statusCode : 500
     }, { 
-      status: error instanceof Error && 'statusCode' in error ? error.statusCode : 500 
+      status: error instanceof Error && 'statusCode' in error ? (error as any).statusCode : 500 
     })
   }
 } 
