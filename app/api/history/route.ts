@@ -45,8 +45,6 @@ export async function POST(req: Request) {
       description: doc.querySelector('meta[property="og:description"]')?.getAttribute('content'),
     }
 
-    const history = scrapeResult.markdown || scrapeResult.html
-
     const responseData = {
       success: true,
       markdown: scrapeResult.markdown,

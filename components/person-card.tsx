@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge"
 import { Linkedin, Rocket, MapPin, Calendar, Award } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import Image from 'next/image'
 
 interface Role {
   title: string
