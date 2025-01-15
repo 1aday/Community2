@@ -12,6 +12,10 @@ interface ScrapeResult {
   formats?: string[]
 }
 
+interface CustomError extends Error {
+  statusCode?: number
+}
+
 const firecrawl = new FirecrawlApp({
   apiKey: process.env.FIRECRAWL_API_KEY || ''
 })
@@ -74,18 +78,21 @@ export async function POST(req: Request) {
     return NextResponse.json(responseData)
 
   } catch (error) {
+    const customError = error as CustomError
+    const statusCode = customError.statusCode || 500
+
     console.error('History Error:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      statusCode: error instanceof Error && 'statusCode' in error ? (error as any).statusCode : 500,
-      stack: error instanceof Error ? error.stack : undefined
+      message: customError.message || 'Unknown error',
+      statusCode: statusCode,
+      stack: customError.stack
     })
     
     return NextResponse.json({ 
       error: 'Failed to fetch history',
-      details: error instanceof Error ? error.message : 'Unknown error',
-      statusCode: error instanceof Error && 'statusCode' in error ? (error as any).statusCode : 500
+      details: customError.message || 'Unknown error',
+      statusCode: statusCode
     }, { 
-      status: error instanceof Error && 'statusCode' in error ? (error as any).statusCode : 500 
+      status: statusCode 
     })
   }
 } 
