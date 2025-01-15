@@ -50,7 +50,7 @@ export async function POST(req: Request) {
     const responseData = {
       success: true,
       markdown: scrapeResult.markdown,
-      metadata: scrapeResult.metadata,
+      metadata: metadata,
       html: scrapeResult.html
     }
 

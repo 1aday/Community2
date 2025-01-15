@@ -41,12 +41,6 @@ export async function POST(req: Request) {
     const cleanedRocketReachData = rocketReachData?.markdown ? cleanRocketReachData(rocketReachData.markdown) : ''
     console.log('Cleaned RocketReach Data:', cleanedRocketReachData)
 
-    // Combine the data for OpenAI
-    const combinedData = {
-      ...perplexityData,
-      additionalInfo: cleanedRocketReachData
-    };
-
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
