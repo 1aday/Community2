@@ -1,11 +1,38 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
+interface RocketReachData {
+  metadata?: {
+    'og:title'?: string;
+  };
+  markdown?: string;
+}
+
+interface ProcessedInfo {
+  currentRole: string;
+  keyAchievements: string[];
+  professionalBackground: string;
+  careerHistory: Array<{
+    title: string;
+    company: string;
+    duration: string;
+    highlights: string[];
+  }>;
+  expertiseAreas: string[];
+}
+
+interface RequestData {
+  perplexityData: any;
+  rocketReachData: RocketReachData;
+  name: string;
+  company: string;
+}
+
 // Add type for the environment variables
 declare global {
   namespace NodeJS {
     interface ProcessEnv {
-      OPENAI_API_KEY: string
+      OPENAI_API_KEY: string;
     }
   }
 }
@@ -27,7 +54,7 @@ function cleanRocketReachData(data: string): string {
 
 export async function POST(req: Request) {
   try {
-    const { perplexityData, rocketReachData: originalRocketReachData, name, company } = await req.json()
+    const { perplexityData, rocketReachData: originalRocketReachData, name, company }: RequestData = await req.json()
     
     console.log('Processing Info:')
     console.log('Perplexity Data:', perplexityData)
@@ -99,7 +126,7 @@ export async function POST(req: Request) {
     }
 
     // Parse the JSON response and wrap it in the expected structure
-    const processedInfo = JSON.parse(content)
+    const processedInfo = JSON.parse(content) as ProcessedInfo
     return NextResponse.json({ info: processedInfo })
 
   } catch (error) {
