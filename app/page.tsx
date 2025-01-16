@@ -194,8 +194,8 @@ export default function Home() {
         ...row, 
         loading: true,
         loadingStates: {
-          perplexity: false,
-          rocketReach: false,
+          perplexity: true,
+          rocketReach: true,
           openai: false
         }
       }
@@ -214,67 +214,37 @@ export default function Home() {
         throw new Error(profileData.error || 'Failed to fetch profile information')
       }
 
-      // Update loading state for Perplexity
-      setRows(prev => {
-        const newRows = [...prev]
-        newRows[index] = { 
-          ...newRows[index], 
-          loadingStates: {
-            perplexity: true,
-            rocketReach: false,
-            openai: false
-          }
-        }
-        return newRows
-      })
+      // Start both Perplexity and RocketReach requests in parallel
+      const [perplexityData, rocketReachData] = await Promise.all([
+        // Get person info from Perplexity
+        fetch('/api/person-info', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            name: row.col1, 
+            company: row.col2,
+            prompt: prompt
+          })
+        }).then(res => res.json()),
 
-      // Get person info from Perplexity
-      const personInfoPayload = { 
-        name: row.col1, 
-        company: row.col2,
-        prompt: prompt
-      }
-
-      const infoResponse = await fetch('/api/person-info', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(personInfoPayload)
-      })
-      const perplexityData = await infoResponse.json()
-      if (!infoResponse.ok) {
-        throw new Error(perplexityData.error || 'Failed to fetch person information')
-      }
-
-      // Update loading state for RocketReach
-      setRows(prev => {
-        const newRows = [...prev]
-        newRows[index] = { 
-          ...newRows[index], 
-          loadingStates: {
-            perplexity: false,
-            rocketReach: true,
-            openai: false
-          }
-        }
-        return newRows
-      })
-
-      let rocketReachData = null
-      if (profileData.rocketReachUrl) {
-        try {
-          const historyResponse = await fetch('/api/history', {
+        // Get RocketReach data if URL is available
+        profileData.rocketReachUrl ? 
+          fetch('/api/history', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ url: profileData.rocketReachUrl })
           })
-          const historyData = await historyResponse.json()
-          if (historyResponse.ok && !historyData.error) {
-            rocketReachData = historyData
-          }
-        } catch (error) {
-          console.warn('RocketReach data fetch failed:', error)
-          // Continue without RocketReach data
-        }
+            .then(res => res.json())
+            .then(data => data.error ? null : data)
+            .catch(error => {
+              console.warn('RocketReach data fetch failed:', error)
+              return null
+            }) 
+          : Promise.resolve(null)
+      ])
+
+      if (!perplexityData || perplexityData.error) {
+        throw new Error(perplexityData.error || 'Failed to fetch person information')
       }
 
       // Update loading state for OpenAI
@@ -340,13 +310,9 @@ export default function Home() {
             openai: false
           },
           info: {
+            ...defaultInfo,
             currentRole: error instanceof Error ? error.message : "Error fetching information",
-            keyAchievements: [],
-            professionalBackground: "An error occurred while fetching the data. Please try again.",
-            expertiseAreas: [],
-            careerHistory: [],
-            linkedInUrl: "",
-            rocketReachUrl: ""
+            professionalBackground: "An error occurred while fetching the data. Please try again."
           }
         }
         return newRows
