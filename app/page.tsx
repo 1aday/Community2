@@ -6,12 +6,11 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ChevronDown, ChevronUp, Settings } from "lucide-react"
+import { ChevronDown, ChevronUp } from "lucide-react"
 import { PromptEditor } from "@/components/prompt-editor"
 import { PersonCard } from "@/components/person-card"
 import { LoadingIndicator } from "@/components/loading-indicator"
 import { PersonInfo } from "@/types"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 
 interface LoadingState {
   perplexity: boolean
@@ -315,36 +314,53 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen">
-      <header className="border-b">
-        <div className="container mx-auto py-4 px-8 flex items-center justify-between">
-          <h1 className="text-2xl font-bold tracking-tight">
+    <div className="min-h-screen p-8">
+      <main className="container mx-auto space-y-8">
+        <section className="text-center space-y-4">
+          <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
             Person Info Finder
           </h1>
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="icon">
-                <Settings className="h-4 w-4" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent className="w-[400px] sm:w-[540px]">
-              <SheetHeader>
-                <SheetTitle>Prompt Settings</SheetTitle>
-              </SheetHeader>
-              <div className="mt-4">
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            Enter a person&apos;s name and company to find information about them
+          </p>
+        </section>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="flex items-center justify-end mb-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-foreground"
+              onClick={() => setIsPromptOpen(!isPromptOpen)}
+            >
+              <span className="mr-2">Customize Search Prompt</span>
+              {isPromptOpen ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+
+          {isPromptOpen && (
+            <Card className="border-dashed">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Advanced: Prompt Editor</CardTitle>
+                <CardDescription className="text-xs">
+                  Customize how the AI finds and presents information
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
                 <PromptEditor
                   value={prompt}
                   onChange={setPrompt}
                   onReset={resetPrompt}
                 />
-              </div>
-            </SheetContent>
-          </Sheet>
-        </div>
-      </header>
+              </CardContent>
+            </Card>
+          )}
 
-      <main className="container mx-auto py-8 px-8 space-y-8">
-        <form onSubmit={handleSubmit} className="space-y-6">
           <Card>
             <CardHeader 
               className="cursor-pointer hover:bg-muted/50 transition-colors"
@@ -352,7 +368,7 @@ export default function Home() {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Bulk Import</CardTitle>
+                  <CardTitle>Bulk Paste</CardTitle>
                   <CardDescription>
                     Paste your tab-separated data here (name and company)
                   </CardDescription>
