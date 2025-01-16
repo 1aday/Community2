@@ -3,15 +3,10 @@ import { User, Brain, Rocket, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
 
-interface LoadingState {
-  profilePic: boolean
+interface LoadingStates {
   perplexity: boolean
   rocketReach: boolean
   openai: boolean
-}
-
-interface LoadingIndicatorProps {
-  loadingStates: LoadingState
 }
 
 interface StepProps {
@@ -112,9 +107,9 @@ function Step({ icon, label, isActive, isDone, isLast, index }: StepProps) {
   )
 }
 
-export function LoadingIndicator({ loadingStates }: LoadingIndicatorProps) {
-  const isDone = (step: keyof LoadingState) => {
-    const steps: (keyof LoadingState)[] = ['profilePic', 'perplexity', 'rocketReach', 'openai']
+export function LoadingIndicator({ loadingStates }: { loadingStates: LoadingStates }) {
+  const isDone = (step: keyof LoadingStates) => {
+    const steps: (keyof LoadingStates)[] = ['perplexity', 'rocketReach', 'openai']
     const currentIndex = steps.indexOf(step)
     const activeIndex = steps.findIndex(s => loadingStates[s])
     return currentIndex < activeIndex
@@ -127,8 +122,8 @@ export function LoadingIndicator({ loadingStates }: LoadingIndicatorProps) {
           <Step
             icon={<User size={20} />}
             label="Profile"
-            isActive={loadingStates.profilePic}
-            isDone={isDone('profilePic')}
+            isActive={false}
+            isDone={false}
             index={0}
           />
           <Step

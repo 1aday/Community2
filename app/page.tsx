@@ -15,7 +15,6 @@ import Image from 'next/image'
 import { PersonInfo } from "@/types"
 
 interface LoadingState {
-  profilePic: boolean
   perplexity: boolean
   rocketReach: boolean
   openai: boolean
@@ -26,7 +25,6 @@ interface RowData {
   col2: string
   info: PersonInfo | null
   loading?: boolean
-  profilePic?: string
   loadingStates?: LoadingState
 }
 
@@ -53,7 +51,6 @@ export default function Home() {
       col2: "Shopify",
       info: null,
       loadingStates: {
-        profilePic: false,
         perplexity: false,
         rocketReach: false,
         openai: false
@@ -106,7 +103,6 @@ export default function Home() {
       col2: "", 
       info: null,
       loadingStates: {
-        profilePic: false,
         perplexity: false,
         rocketReach: false,
         openai: false
@@ -121,7 +117,6 @@ export default function Home() {
       col2: "",
       info: null,
       loadingStates: {
-        profilePic: false,
         perplexity: false,
         rocketReach: false,
         openai: false
@@ -138,7 +133,6 @@ export default function Home() {
         col2: col2.trim(),
         info: null,
         loadingStates: {
-          profilePic: false,
           perplexity: false,
           rocketReach: false,
           openai: false
@@ -150,7 +144,6 @@ export default function Home() {
       col2: "",
       info: null,
       loadingStates: {
-        profilePic: false,
         perplexity: false,
         rocketReach: false,
         openai: false
@@ -201,7 +194,6 @@ export default function Home() {
         ...row, 
         loading: true,
         loadingStates: {
-          profilePic: true,
           perplexity: false,
           rocketReach: false,
           openai: false
@@ -211,7 +203,7 @@ export default function Home() {
     })
 
     try {
-      // First get profile pic and LinkedIn URL
+      // First get LinkedIn URL and RocketReach URL
       const profileResponse = await fetch('/api/profile-pic', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -228,7 +220,6 @@ export default function Home() {
         newRows[index] = { 
           ...newRows[index], 
           loadingStates: {
-            profilePic: false,
             perplexity: true,
             rocketReach: false,
             openai: false
@@ -260,7 +251,6 @@ export default function Home() {
         newRows[index] = { 
           ...newRows[index], 
           loadingStates: {
-            profilePic: false,
             perplexity: false,
             rocketReach: true,
             openai: false
@@ -293,7 +283,6 @@ export default function Home() {
         newRows[index] = { 
           ...newRows[index], 
           loadingStates: {
-            profilePic: false,
             perplexity: false,
             rocketReach: false,
             openai: true
@@ -329,10 +318,8 @@ export default function Home() {
             linkedInUrl: profileData.linkedInUrl,
             rocketReachUrl: profileData.rocketReachUrl
           },
-          profilePic: profileData.imageUrl,
           loading: false,
           loadingStates: {
-            profilePic: false,
             perplexity: false,
             rocketReach: false,
             openai: false
@@ -348,7 +335,6 @@ export default function Home() {
           ...row, 
           loading: false,
           loadingStates: {
-            profilePic: false,
             perplexity: false,
             rocketReach: false,
             openai: false
@@ -458,9 +444,8 @@ export default function Home() {
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Company</TableHead>
-                    <TableHead>Profile Picture</TableHead>
-                    <TableHead>Information</TableHead>
-                    <TableHead className="w-[150px]">Actions</TableHead>
+                    <TableHead>Info</TableHead>
+                    <TableHead className="w-[100px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -480,72 +465,20 @@ export default function Home() {
                           placeholder="Company"
                         />
                       </TableCell>
-                      <TableCell>
-                        {row.loading ? (
-                          <div className="flex items-center justify-center w-12 h-12">
-                            <Loader2 className="h-6 w-6 animate-spin" />
-                          </div>
-                        ) : row.profilePic ? (
-                          <Image 
-                            src={row.profilePic} 
-                            alt=""
-                            width={48}
-                            height={48}
-                            className="rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                            {row.col1 ? row.col1[0].toUpperCase() : "—"}
-                          </div>
-                        )}
-                      </TableCell>
                       <TableCell className="min-w-[400px]">
                         {row.loading ? (
                           <div className="space-y-8">
                             <LoadingIndicator 
                               loadingStates={{
-                                profilePic: row.loadingStates?.profilePic ?? false,
                                 perplexity: row.loadingStates?.perplexity ?? false,
                                 rocketReach: row.loadingStates?.rocketReach ?? false,
                                 openai: row.loadingStates?.openai ?? false
                               }} 
                             />
-                            <motion.div 
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              className="text-center"
-                            >
-                              <motion.p 
-                                className="text-sm text-muted-foreground"
-                                animate={{ opacity: [0.5, 1, 0.5] }}
-                                transition={{ duration: 2, repeat: Infinity }}
-                              >
-                                {row.loadingStates?.profilePic && (
-                                  "Searching across professional networks..."
-                                )}
-                                {row.loadingStates?.perplexity && (
-                                  "Analyzing career trajectory and achievements..."
-                                )}
-                                {row.loadingStates?.rocketReach && (
-                                  "Building comprehensive professional profile..."
-                                )}
-                                {row.loadingStates?.openai && (
-                                  "Crafting detailed career insights..."
-                                )}
-                              </motion.p>
-                            </motion.div>
                           </div>
                         ) : row.info ? (
-                          <PersonCard
-                            name={row.col1}
-                            info={row.info || defaultInfo}
-                            profilePic={row.profilePic}
-                            linkedinUrl={row.info?.linkedInUrl}
-                            rocketReachUrl={row.info?.rocketReachUrl}
-                          />
-                        ) : (
-                          "No information yet"
-                        )}
+                          <PersonCard info={row.info} />
+                        ) : null}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
