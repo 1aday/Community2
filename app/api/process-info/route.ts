@@ -1,62 +1,10 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
-// Data Interfaces
-// ------------------------------
-interface RocketReachData {
-  metadata?: {
-    'og:title'?: string;
-  };
-  markdown?: string;
-}
-
-interface PerplexityData {
-  text?: string;
-  summary?: string;
-  achievements?: string[];
-  [key: string]: unknown;
-}
-
-interface ProcessedInfo {
-  currentRole: string;
-  keyAchievements: string[];
-  professionalBackground: string;
-  careerHistory: Array<{
-    title: string;
-    company: string;
-    duration: string;
-    highlights: string[];
-  }>;
-  expertiseAreas: string[];
-}
-
-interface RequestData {
-  perplexityData: PerplexityData;
-  rocketReachData: RocketReachData | null;
-  name: string;
-  company: string;
-}
-
-// Environment Configuration
-// ------------------------------
-type Env = {
-  OPENAI_API_KEY: string;
-}
-
-const getEnvVar = (key: keyof Env): string => {
-  const value = process.env[key]
-  if (!value) {
-    throw new Error(`Missing environment variable: ${key}`)
-  }
-  return value
-}
-
 const openai = new OpenAI({
-  apiKey: getEnvVar('OPENAI_API_KEY')
+  apiKey: process.env.OPENAI_API_KEY
 })
 
-// Utility Functions
-// ------------------------------
 function cleanRocketReachData(data: string): string {
   return data
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
@@ -68,27 +16,19 @@ function cleanRocketReachData(data: string): string {
     .trim()
 }
 
-// Main Route Handler
-// ------------------------------
 export async function POST(req: Request) {
   try {
-    // Extract and validate request data
-    const { 
-      perplexityData, 
-      rocketReachData: originalRocketReachData, 
-      name, 
-      company 
-    }: RequestData = await req.json()
+    const { perplexityData, rocketReachData: originalRocketReachData, name, company } = await req.json()
     
     console.log('Processing Info:')
     console.log('Perplexity Data:', perplexityData)
     
-    // Validate RocketReach data
-    let rocketReachData: RocketReachData | null = originalRocketReachData
+    let rocketReachData = originalRocketReachData
+
+    // Simple validation - just check if title contains name and company
     if (rocketReachData?.metadata) {
       const title = (rocketReachData.metadata['og:title'] || '').toLowerCase()
-      const hasName = name.toLowerCase().split(' ')
-        .every((part: string) => title.includes(part))
+      const hasName = name.toLowerCase().split(' ').every(part => title.includes(part))
       const hasCompany = title.includes(company.toLowerCase())
 
       if (!hasName || !hasCompany) {
@@ -97,13 +37,10 @@ export async function POST(req: Request) {
       }
     }
 
-    // Process RocketReach data
-    const cleanedRocketReachData = rocketReachData?.markdown 
-      ? cleanRocketReachData(rocketReachData.markdown) 
-      : ''
+    // Access the markdown directly from the validated data
+    const cleanedRocketReachData = rocketReachData?.markdown ? cleanRocketReachData(rocketReachData.markdown) : ''
     console.log('Cleaned RocketReach Data:', cleanedRocketReachData)
 
-    // Generate OpenAI completion
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -113,19 +50,14 @@ export async function POST(req: Request) {
           DO NOT MAKE UP ANY INFORMATION. Only use what is provided in the data sources.
           
           The RocketReach data contains career history information - use this as the primary source for work history.
-          The Perplexity data contains additional context and achievements. For career history iclude as many possible career points as you can see mention in the data provided.
+          The Perplexity data contains additional context and achievements.
           
           Return response in this exact JSON structure:
           {
             "currentRole": "string",
             "keyAchievements": ["string"],
             "professionalBackground": "string",
-            "careerHistory": [{
-              "title": "string",
-              "company": "string",
-              "duration": "string",
-              "highlights": ["string"]
-            }],
+            "careerHistory": [{"title": "string", "company": "string", "duration": "string", "highlights": ["string"]}],
             "expertiseAreas": ["string"]
           }
           
@@ -152,20 +84,17 @@ export async function POST(req: Request) {
       temperature: 0.1
     })
 
-    // Process and return response
     const content = completion.choices[0].message.content
     if (!content) {
       throw new Error('OpenAI response missing content')
     }
 
-    const processedInfo = JSON.parse(content) as ProcessedInfo
+    // Parse the JSON response and wrap it in the expected structure
+    const processedInfo = JSON.parse(content)
     return NextResponse.json({ info: processedInfo })
 
   } catch (error) {
-    console.error("Error processing info:", error)
-    return NextResponse.json(
-      { error: "Failed to process information" }, 
-      { status: 500 }
-    )
+    console.error("Error processing info:", error);
+    return NextResponse.json({ error: "Failed to process information" }, { status: 500 });
   }
 } 

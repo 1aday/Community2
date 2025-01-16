@@ -6,13 +6,16 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ChevronDown, ChevronUp } from "lucide-react"
+import { Loader2, ChevronDown, ChevronUp } from "lucide-react"
 import { PromptEditor } from "@/components/prompt-editor"
 import { PersonCard } from "@/components/person-card"
 import { LoadingIndicator } from "@/components/loading-indicator"
+import { motion } from "framer-motion"
+import Image from 'next/image'
 import { PersonInfo } from "@/types"
 
 interface LoadingState {
+  profilePic: boolean
   perplexity: boolean
   rocketReach: boolean
   openai: boolean
@@ -23,8 +26,8 @@ interface RowData {
   col2: string
   info: PersonInfo | null
   loading?: boolean
-  loadingStates?: LoadingState
   profilePic?: string
+  loadingStates?: LoadingState
 }
 
 interface ApiResponse {
@@ -50,6 +53,7 @@ export default function Home() {
       col2: "Shopify",
       info: null,
       loadingStates: {
+        profilePic: false,
         perplexity: false,
         rocketReach: false,
         openai: false
@@ -102,6 +106,7 @@ export default function Home() {
       col2: "", 
       info: null,
       loadingStates: {
+        profilePic: false,
         perplexity: false,
         rocketReach: false,
         openai: false
@@ -116,6 +121,7 @@ export default function Home() {
       col2: "",
       info: null,
       loadingStates: {
+        profilePic: false,
         perplexity: false,
         rocketReach: false,
         openai: false
@@ -132,6 +138,7 @@ export default function Home() {
         col2: col2.trim(),
         info: null,
         loadingStates: {
+          profilePic: false,
           perplexity: false,
           rocketReach: false,
           openai: false
@@ -143,6 +150,7 @@ export default function Home() {
       col2: "",
       info: null,
       loadingStates: {
+        profilePic: false,
         perplexity: false,
         rocketReach: false,
         openai: false
@@ -193,8 +201,9 @@ export default function Home() {
         ...row, 
         loading: true,
         loadingStates: {
-          perplexity: true,  // Start both immediately
-          rocketReach: true, // Start both immediately
+          profilePic: true,
+          perplexity: false,
+          rocketReach: false,
           openai: false
         }
       }
@@ -202,41 +211,79 @@ export default function Home() {
     })
 
     try {
-      // Run both requests in parallel
-      const [profileData, perplexityData] = await Promise.all([
-        // Profile pic and URLs request
-        fetch('/api/profile-pic', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: row.col1, company: row.col2 }),
-        }).then(res => res.json()),
+      // First get profile pic and LinkedIn URL
+      const profileResponse = await fetch('/api/profile-pic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: row.col1, company: row.col2 }),
+      })
+      const profileData = await profileResponse.json()
+      if (!profileResponse.ok) {
+        throw new Error(profileData.error || 'Failed to fetch profile information')
+      }
 
-        // Perplexity request
-        fetch('/api/person-info', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            name: row.col1, 
-            company: row.col2,
-            prompt: prompt
-          }),
-        }).then(res => res.json())
-      ])
+      // Update loading state for Perplexity
+      setRows(prev => {
+        const newRows = [...prev]
+        newRows[index] = { 
+          ...newRows[index], 
+          loadingStates: {
+            profilePic: false,
+            perplexity: true,
+            rocketReach: false,
+            openai: false
+          }
+        }
+        return newRows
+      })
 
-      if (profileData.error) throw new Error(profileData.error)
-      if (perplexityData.error) throw new Error(perplexityData.error)
+      // Get person info from Perplexity
+      const personInfoPayload = { 
+        name: row.col1, 
+        company: row.col2,
+        prompt: prompt
+      }
 
-      // Both requests completed, now fetch RocketReach data
+      const infoResponse = await fetch('/api/person-info', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(personInfoPayload)
+      })
+      const perplexityData = await infoResponse.json()
+      if (!infoResponse.ok) {
+        throw new Error(perplexityData.error || 'Failed to fetch person information')
+      }
+
+      // Update loading state for RocketReach
+      setRows(prev => {
+        const newRows = [...prev]
+        newRows[index] = { 
+          ...newRows[index], 
+          loadingStates: {
+            profilePic: false,
+            perplexity: false,
+            rocketReach: true,
+            openai: false
+          }
+        }
+        return newRows
+      })
+
       let rocketReachData = null
       if (profileData.rocketReachUrl) {
-        const historyResponse = await fetch('/api/history', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: profileData.rocketReachUrl })
-        })
-        const historyData = await historyResponse.json()
-        if (historyResponse.ok && !historyData.error) {
-          rocketReachData = historyData
+        try {
+          const historyResponse = await fetch('/api/history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: profileData.rocketReachUrl })
+          })
+          const historyData = await historyResponse.json()
+          if (historyResponse.ok && !historyData.error) {
+            rocketReachData = historyData
+          }
+        } catch (error) {
+          console.warn('RocketReach data fetch failed:', error)
+          // Continue without RocketReach data
         }
       }
 
@@ -246,6 +293,7 @@ export default function Home() {
         newRows[index] = { 
           ...newRows[index], 
           loadingStates: {
+            profilePic: false,
             perplexity: false,
             rocketReach: false,
             openai: true
@@ -266,8 +314,9 @@ export default function Home() {
         })
       })
       const processedData: ApiResponse = await processResponse.json()
+
       if (!processResponse.ok) {
-        throw new Error(processedData.error || 'Failed to process information')
+        throw new Error(processedData.details || processedData.error || 'Failed to process information')
       }
 
       // Final update with results
@@ -283,6 +332,7 @@ export default function Home() {
           profilePic: profileData.imageUrl,
           loading: false,
           loadingStates: {
+            profilePic: false,
             perplexity: false,
             rocketReach: false,
             openai: false
@@ -298,14 +348,19 @@ export default function Home() {
           ...row, 
           loading: false,
           loadingStates: {
+            profilePic: false,
             perplexity: false,
             rocketReach: false,
             openai: false
           },
           info: {
-            ...defaultInfo,
             currentRole: error instanceof Error ? error.message : "Error fetching information",
-            professionalBackground: "An error occurred while fetching the data. Please try again."
+            keyAchievements: [],
+            professionalBackground: "An error occurred while fetching the data. Please try again.",
+            expertiseAreas: [],
+            careerHistory: [],
+            linkedInUrl: "",
+            rocketReachUrl: ""
           }
         }
         return newRows
@@ -326,31 +381,26 @@ export default function Home() {
         </section>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="flex items-center justify-end mb-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-foreground"
+          <Card>
+            <CardHeader 
+              className="cursor-pointer hover:bg-muted/50 transition-colors"
               onClick={() => setIsPromptOpen(!isPromptOpen)}
             >
-              <span className="mr-2">Customize Search Prompt</span>
-              {isPromptOpen ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-
-          {isPromptOpen && (
-            <Card className="border-dashed">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Advanced: Prompt Editor</CardTitle>
-                <CardDescription className="text-xs">
-                  Customize how the AI finds and presents information
-                </CardDescription>
-              </CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Prompt Editor</CardTitle>
+                  <CardDescription>
+                    Customize how the AI finds and presents information
+                  </CardDescription>
+                </div>
+                {isPromptOpen ? (
+                  <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                )}
+              </div>
+            </CardHeader>
+            {isPromptOpen && (
               <CardContent>
                 <PromptEditor
                   value={prompt}
@@ -358,8 +408,8 @@ export default function Home() {
                   onReset={resetPrompt}
                 />
               </CardContent>
-            </Card>
-          )}
+            )}
+          </Card>
 
           <Card>
             <CardHeader 
@@ -408,8 +458,9 @@ export default function Home() {
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Company</TableHead>
-                    <TableHead>Info</TableHead>
-                    <TableHead className="w-[100px]">Actions</TableHead>
+                    <TableHead>Profile Picture</TableHead>
+                    <TableHead>Information</TableHead>
+                    <TableHead className="w-[150px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -429,24 +480,72 @@ export default function Home() {
                           placeholder="Company"
                         />
                       </TableCell>
+                      <TableCell>
+                        {row.loading ? (
+                          <div className="flex items-center justify-center w-12 h-12">
+                            <Loader2 className="h-6 w-6 animate-spin" />
+                          </div>
+                        ) : row.profilePic ? (
+                          <Image 
+                            src={row.profilePic} 
+                            alt=""
+                            width={48}
+                            height={48}
+                            className="rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                            {row.col1 ? row.col1[0].toUpperCase() : "—"}
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell className="min-w-[400px]">
                         {row.loading ? (
                           <div className="space-y-8">
                             <LoadingIndicator 
                               loadingStates={{
+                                profilePic: row.loadingStates?.profilePic ?? false,
                                 perplexity: row.loadingStates?.perplexity ?? false,
                                 rocketReach: row.loadingStates?.rocketReach ?? false,
                                 openai: row.loadingStates?.openai ?? false
                               }} 
                             />
+                            <motion.div 
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="text-center"
+                            >
+                              <motion.p 
+                                className="text-sm text-muted-foreground"
+                                animate={{ opacity: [0.5, 1, 0.5] }}
+                                transition={{ duration: 2, repeat: Infinity }}
+                              >
+                                {row.loadingStates?.profilePic && (
+                                  "Searching across professional networks..."
+                                )}
+                                {row.loadingStates?.perplexity && (
+                                  "Analyzing career trajectory and achievements..."
+                                )}
+                                {row.loadingStates?.rocketReach && (
+                                  "Building comprehensive professional profile..."
+                                )}
+                                {row.loadingStates?.openai && (
+                                  "Crafting detailed career insights..."
+                                )}
+                              </motion.p>
+                            </motion.div>
                           </div>
                         ) : row.info ? (
-                          <PersonCard 
-                            info={row.info} 
+                          <PersonCard
                             name={row.col1}
+                            info={row.info || defaultInfo}
                             profilePic={row.profilePic}
+                            linkedinUrl={row.info?.linkedInUrl}
+                            rocketReachUrl={row.info?.rocketReachUrl}
                           />
-                        ) : null}
+                        ) : (
+                          "No information yet"
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
