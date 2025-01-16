@@ -11,7 +11,6 @@ import { PromptEditor } from "@/components/prompt-editor"
 import { PersonCard } from "@/components/person-card"
 import { LoadingIndicator } from "@/components/loading-indicator"
 import { PersonInfo } from "@/types"
-
 interface LoadingState {
   perplexity: boolean
   rocketReach: boolean
