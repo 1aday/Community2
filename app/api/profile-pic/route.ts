@@ -1,54 +1,26 @@
 import { NextResponse } from 'next/server'
-import axios from 'axios'
+import axios, { AxiosResponse } from 'axios'
 
 // Add retry configuration
 const MAX_RETRIES = 3
 const RETRY_DELAY = 1000 // 1 second
 
-interface SerperResult {
-  title: string
-  link: string
-  snippet: string
-  position: number
-}
-
-async function delay(ms: number) {
+async function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-async function makeRequestWithRetry(url: string, retries = MAX_RETRIES): Promise<any> {
+async function makeRequestWithRetry(url: string, retries = MAX_RETRIES): Promise<AxiosResponse> {
   try {
-    const response = await axios.get(url)
+    const response = await axios.get(url, { responseType: 'arraybuffer' })
     return response
-  } catch (error: any) {
-    if (error.response?.status === 429 && retries > 0) {
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 429 && retries > 0) {
       // Wait before retrying
       await delay(RETRY_DELAY)
       return makeRequestWithRetry(url, retries - 1)
     }
     throw error
   }
-}
-
-function validateRocketReachResult(result: SerperResult, name: string, company: string): boolean {
-  if (!result?.title) return false
-  
-  // Convert everything to lowercase for case-insensitive comparison
-  const title = result.title.toLowerCase()
-  const searchName = name.toLowerCase()
-  const searchCompany = company.toLowerCase()
-  
-  // Split name into parts for more flexible matching
-  const nameParts = searchName.split(' ')
-  const hasName = nameParts.every((part: string) => title.includes(part))
-  
-  // Check if company name is in title or snippet
-  const hasCompanyInTitle = title.includes(searchCompany)
-  const hasCompanyInSnippet = result.snippet ? 
-    result.snippet.toLowerCase().includes(searchCompany) : 
-    false
-  
-  return hasName && (hasCompanyInTitle || hasCompanyInSnippet)
 }
 
 export async function POST(req: Request) {
@@ -64,9 +36,15 @@ export async function POST(req: Request) {
 
   } catch (error) {
     console.error('Error proxying image:', error)
+    let status = 500
+    
+    if (axios.isAxiosError(error) && error.response?.status) {
+      status = error.response.status
+    }
+    
     return NextResponse.json(
       { error: 'Failed to proxy image' },
-      { status: error.response?.status || 500 }
+      { status }
     )
   }
 } 
