@@ -1,6 +1,15 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
+// Add type for the environment variables
+declare global {
+  namespace NodeJS {
+    interface ProcessEnv {
+      OPENAI_API_KEY: string
+    }
+  }
+}
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 })
@@ -28,7 +37,7 @@ export async function POST(req: Request) {
     // Simple validation - just check if title contains name and company
     if (rocketReachData?.metadata) {
       const title = (rocketReachData.metadata['og:title'] || '').toLowerCase()
-      const hasName = name.toLowerCase().split(' ').every(part => title.includes(part))
+      const hasName = name.toLowerCase().split(' ').every((part: string) => title.includes(part))
       const hasCompany = title.includes(company.toLowerCase())
 
       if (!hasName || !hasCompany) {
