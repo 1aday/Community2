@@ -113,7 +113,7 @@ export async function POST(req: Request) {
           DO NOT MAKE UP ANY INFORMATION. Only use what is provided in the data sources.
           
           The RocketReach data contains career history information - use this as the primary source for work history.
-          The Perplexity data contains additional context and achievements.
+          The Perplexity data contains additional context and achievements. For career history iclude as many possible career points as you can see mention in the data provided.
           
           Return response in this exact JSON structure:
           {
