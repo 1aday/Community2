@@ -166,7 +166,7 @@ export default function Home() {
 
   const resetPrompt = () => {
     setPrompt(
-      `Find information about {{name}} who works at {{company}}. Return the information in this exact JSON structure. Include at least 3-5 expertise areas, and provide a detailed professional background covering their career progression:
+      `Find information about {{name}} who works at {{company}} DO NOT MAKE SHIT UP, and if you have any doubt that the info you found is not about this person do not include it. Return the information in this exact JSON structure. Include at least 3-5 expertise areas, and provide a detailed professional background covering their career progression:
 {
   "currentRole": "string - detailed current position",
   "keyAchievements": [
