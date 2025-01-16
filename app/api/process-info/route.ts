@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     // Simple validation - just check if title contains name and company
     if (rocketReachData?.metadata) {
       const title = (rocketReachData.metadata['og:title'] || '').toLowerCase()
-      const hasName = name.toLowerCase().split(' ').every(part => title.includes(part))
+      const hasName = name.toLowerCase().split(' ').every((part: string) => title.includes(part))
       const hasCompany = title.includes(company.toLowerCase())
 
       if (!hasName || !hasCompany) {
