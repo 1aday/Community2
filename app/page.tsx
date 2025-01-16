@@ -6,12 +6,10 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, ChevronDown, ChevronUp } from "lucide-react"
+import { ChevronDown, ChevronUp } from "lucide-react"
 import { PromptEditor } from "@/components/prompt-editor"
 import { PersonCard } from "@/components/person-card"
 import { LoadingIndicator } from "@/components/loading-indicator"
-import { motion } from "framer-motion"
-import Image from 'next/image'
 import { PersonInfo } from "@/types"
 
 interface LoadingState {
@@ -34,7 +32,7 @@ interface ApiResponse {
   details?: string
 }
 
-const defaultInfo: PersonInfo = {
+const emptyInfo: PersonInfo = {
   currentRole: "",
   keyAchievements: [],
   professionalBackground: "",
@@ -310,7 +308,7 @@ export default function Home() {
             openai: false
           },
           info: {
-            ...defaultInfo,
+            ...emptyInfo,
             currentRole: error instanceof Error ? error.message : "Error fetching information",
             professionalBackground: "An error occurred while fetching the data. Please try again."
           }
