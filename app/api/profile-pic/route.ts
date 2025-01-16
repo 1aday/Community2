@@ -1,11 +1,33 @@
 import { NextResponse } from 'next/server'
 import axios from 'axios'
 
+// Add retry configuration
+const MAX_RETRIES = 3
+const RETRY_DELAY = 1000 // 1 second
+
 interface SerperResult {
   title: string
   link: string
   snippet: string
   position: number
+}
+
+async function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+async function makeRequestWithRetry(url: string, retries = MAX_RETRIES): Promise<any> {
+  try {
+    const response = await axios.get(url)
+    return response
+  } catch (error: any) {
+    if (error.response?.status === 429 && retries > 0) {
+      // Wait before retrying
+      await delay(RETRY_DELAY)
+      return makeRequestWithRetry(url, retries - 1)
+    }
+    throw error
+  }
 }
 
 function validateRocketReachResult(result: SerperResult, name: string, company: string): boolean {
@@ -18,7 +40,7 @@ function validateRocketReachResult(result: SerperResult, name: string, company: 
   
   // Split name into parts for more flexible matching
   const nameParts = searchName.split(' ')
-  const hasName = nameParts.every(part => title.includes(part))
+  const hasName = nameParts.every((part: string) => title.includes(part))
   
   // Check if company name is in title or snippet
   const hasCompanyInTitle = title.includes(searchCompany)
@@ -31,60 +53,20 @@ function validateRocketReachResult(result: SerperResult, name: string, company: 
 
 export async function POST(req: Request) {
   try {
-    const { name, company } = await req.json()
-
-    // LinkedIn Image Search
-    console.group('Serper LinkedIn API Request')
-    console.log('Query:', `${name} ${company} site:linkedin.com/in`)
-
-    const linkedInResponse = await axios.post('https://google.serper.dev/images', {
-      q: `${name} ${company} site:linkedin.com/in`
-    }, {
-      headers: {
-        'X-API-KEY': process.env.SERPER_API_KEY,
-        'Content-Type': 'application/json'
-      }
+    const { imageUrl } = await req.json()
+    
+    const response = await makeRequestWithRetry(imageUrl)
+    const base64Image = Buffer.from(response.data, 'binary').toString('base64')
+    
+    return NextResponse.json({
+      proxiedUrl: `data:${response.headers['content-type']};base64,${base64Image}`
     })
 
-    console.log('Serper LinkedIn Response:', linkedInResponse.data)
-    console.groupEnd()
-
-    // RocketReach Search using regular search API
-    console.group('Serper RocketReach API Request')
-    const rocketReachQuery = `"${name}" ${company} site:rocketreach.co`
-    console.log('Query:', rocketReachQuery)
-
-    const rocketReachResponse = await axios.post('https://google.serper.dev/search', {
-      q: rocketReachQuery
-    }, {
-      headers: {
-        'X-API-KEY': process.env.SERPER_API_KEY,
-        'Content-Type': 'application/json'
-      }
-    })
-
-    console.log('Serper RocketReach Response:', rocketReachResponse.data)
-
-    // Find the first valid RocketReach result
-    const rocketReachResult = rocketReachResponse.data.organic?.find(
-      (result: SerperResult) => validateRocketReachResult(result, name, company)
-    )
-
-    console.log('Validated RocketReach Result:', rocketReachResult || 'No valid result found')
-    console.groupEnd()
-
-    const linkedInResult = linkedInResponse.data.images?.[0]
-
-    return NextResponse.json({ 
-      imageUrl: linkedInResult?.imageUrl || null,
-      linkedInUrl: linkedInResult?.link || null,
-      rocketReachUrl: rocketReachResult?.link || null
-    })
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Error proxying image:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch profile information' },
-      { status: 500 }
+      { error: 'Failed to proxy image' },
+      { status: error.response?.status || 500 }
     )
   }
 } 
