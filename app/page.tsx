@@ -6,12 +6,10 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, ChevronDown, ChevronUp } from "lucide-react"
+import { ChevronDown, ChevronUp } from "lucide-react"
 import { PromptEditor } from "@/components/prompt-editor"
 import { PersonCard } from "@/components/person-card"
 import { LoadingIndicator } from "@/components/loading-indicator"
-import { motion } from "framer-motion"
-import Image from 'next/image'
 import { PersonInfo } from "@/types"
 
 interface LoadingState {
@@ -194,8 +192,8 @@ export default function Home() {
         ...row, 
         loading: true,
         loadingStates: {
-          perplexity: false,
-          rocketReach: false,
+          perplexity: true,  // Start both immediately
+          rocketReach: true, // Start both immediately
           openai: false
         }
       }
@@ -203,77 +201,41 @@ export default function Home() {
     })
 
     try {
-      // First get LinkedIn URL and RocketReach URL
-      const profileResponse = await fetch('/api/profile-pic', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: row.col1, company: row.col2 }),
-      })
-      const profileData = await profileResponse.json()
-      if (!profileResponse.ok) {
-        throw new Error(profileData.error || 'Failed to fetch profile information')
-      }
+      // Run both requests in parallel
+      const [profileData, perplexityData] = await Promise.all([
+        // Profile pic and URLs request
+        fetch('/api/profile-pic', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: row.col1, company: row.col2 }),
+        }).then(res => res.json()),
 
-      // Update loading state for Perplexity
-      setRows(prev => {
-        const newRows = [...prev]
-        newRows[index] = { 
-          ...newRows[index], 
-          loadingStates: {
-            perplexity: true,
-            rocketReach: false,
-            openai: false
-          }
-        }
-        return newRows
-      })
+        // Perplexity request
+        fetch('/api/person-info', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            name: row.col1, 
+            company: row.col2,
+            prompt: prompt
+          }),
+        }).then(res => res.json())
+      ])
 
-      // Get person info from Perplexity
-      const personInfoPayload = { 
-        name: row.col1, 
-        company: row.col2,
-        prompt: prompt
-      }
+      if (profileData.error) throw new Error(profileData.error)
+      if (perplexityData.error) throw new Error(perplexityData.error)
 
-      const infoResponse = await fetch('/api/person-info', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(personInfoPayload)
-      })
-      const perplexityData = await infoResponse.json()
-      if (!infoResponse.ok) {
-        throw new Error(perplexityData.error || 'Failed to fetch person information')
-      }
-
-      // Update loading state for RocketReach
-      setRows(prev => {
-        const newRows = [...prev]
-        newRows[index] = { 
-          ...newRows[index], 
-          loadingStates: {
-            perplexity: false,
-            rocketReach: true,
-            openai: false
-          }
-        }
-        return newRows
-      })
-
+      // Both requests completed, now fetch RocketReach data
       let rocketReachData = null
       if (profileData.rocketReachUrl) {
-        try {
-          const historyResponse = await fetch('/api/history', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: profileData.rocketReachUrl })
-          })
-          const historyData = await historyResponse.json()
-          if (historyResponse.ok && !historyData.error) {
-            rocketReachData = historyData
-          }
-        } catch (error) {
-          console.warn('RocketReach data fetch failed:', error)
-          // Continue without RocketReach data
+        const historyResponse = await fetch('/api/history', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: profileData.rocketReachUrl })
+        })
+        const historyData = await historyResponse.json()
+        if (historyResponse.ok && !historyData.error) {
+          rocketReachData = historyData
         }
       }
 
@@ -303,9 +265,8 @@ export default function Home() {
         })
       })
       const processedData: ApiResponse = await processResponse.json()
-
       if (!processResponse.ok) {
-        throw new Error(processedData.details || processedData.error || 'Failed to process information')
+        throw new Error(processedData.error || 'Failed to process information')
       }
 
       // Final update with results
@@ -340,13 +301,9 @@ export default function Home() {
             openai: false
           },
           info: {
+            ...defaultInfo,
             currentRole: error instanceof Error ? error.message : "Error fetching information",
-            keyAchievements: [],
-            professionalBackground: "An error occurred while fetching the data. Please try again.",
-            expertiseAreas: [],
-            careerHistory: [],
-            linkedInUrl: "",
-            rocketReachUrl: ""
+            professionalBackground: "An error occurred while fetching the data. Please try again."
           }
         }
         return newRows
@@ -477,7 +434,10 @@ export default function Home() {
                             />
                           </div>
                         ) : row.info ? (
-                          <PersonCard info={row.info} />
+                          <PersonCard 
+                            info={row.info} 
+                            name={row.col1}
+                          />
                         ) : null}
                       </TableCell>
                       <TableCell>
