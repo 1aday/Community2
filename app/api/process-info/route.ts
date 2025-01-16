@@ -30,7 +30,7 @@ interface ProcessedInfo {
 
 interface RequestData {
   perplexityData: PerplexityData;
-  rocketReachData: RocketReachData;
+  rocketReachData: RocketReachData | null;
   name: string;
   company: string;
 }
@@ -71,7 +71,7 @@ export async function POST(req: Request) {
     console.log('Processing Info:')
     console.log('Perplexity Data:', perplexityData)
     
-    let rocketReachData = originalRocketReachData
+    let rocketReachData: RocketReachData | null = originalRocketReachData
 
     // Simple validation - just check if title contains name and company
     if (rocketReachData?.metadata) {
