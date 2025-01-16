@@ -441,7 +441,10 @@ export default function Home() {
                             />
                           </div>
                         ) : row.info ? (
-                          <PersonCard info={row.info} />
+                          <PersonCard 
+                            info={row.info} 
+                            name={row.col1}
+                          />
                         ) : null}
                       </TableCell>
                       <TableCell>

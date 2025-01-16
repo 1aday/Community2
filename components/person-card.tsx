@@ -21,12 +21,12 @@ interface PersonInfo {
 }
 
 interface PersonCardProps {
-  info: PersonInfo
-  profilePic?: string
-  name: string
-  location?: string
-  linkedinUrl?: string
-  rocketReachUrl?: string
+  name: string;
+  info: PersonInfo;
+  profilePic?: string | null;
+  location?: string;
+  linkedinUrl?: string;
+  rocketReachUrl?: string;
 }
 
 export function PersonCard({ 
