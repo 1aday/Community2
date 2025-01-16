@@ -24,6 +24,7 @@ interface RowData {
   info: PersonInfo | null
   loading?: boolean
   loadingStates?: LoadingState
+  profilePic?: string
 }
 
 interface ApiResponse {
@@ -279,6 +280,7 @@ export default function Home() {
             linkedInUrl: profileData.linkedInUrl,
             rocketReachUrl: profileData.rocketReachUrl
           },
+          profilePic: profileData.imageUrl,
           loading: false,
           loadingStates: {
             perplexity: false,
@@ -437,6 +439,7 @@ export default function Home() {
                           <PersonCard 
                             info={row.info} 
                             name={row.col1}
+                            profilePic={row.profilePic}
                           />
                         ) : null}
                       </TableCell>
