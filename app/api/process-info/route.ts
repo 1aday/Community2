@@ -8,6 +8,13 @@ interface RocketReachData {
   markdown?: string;
 }
 
+interface PerplexityData {
+  text?: string;
+  summary?: string;
+  achievements?: string[];
+  [key: string]: unknown;
+}
+
 interface ProcessedInfo {
   currentRole: string;
   keyAchievements: string[];
@@ -22,23 +29,28 @@ interface ProcessedInfo {
 }
 
 interface RequestData {
-  perplexityData: any;
+  perplexityData: PerplexityData;
   rocketReachData: RocketReachData;
   name: string;
   company: string;
 }
 
-// Add type for the environment variables
-declare global {
-  namespace NodeJS {
-    interface ProcessEnv {
-      OPENAI_API_KEY: string;
-    }
+// Type-safe environment variables
+type Env = {
+  OPENAI_API_KEY: string;
+}
+
+// Verify environment variables at runtime
+const getEnvVar = (key: keyof Env): string => {
+  const value = process.env[key]
+  if (!value) {
+    throw new Error(`Missing environment variable: ${key}`)
   }
+  return value
 }
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+  apiKey: getEnvVar('OPENAI_API_KEY')
 })
 
 function cleanRocketReachData(data: string): string {
