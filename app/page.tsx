@@ -213,10 +213,14 @@ export default function Home() {
         }).then(res => res.json()),
 
         // Perplexity request
-        fetch('/api/perplexity', {
+        fetch('/api/person-info', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: row.col1, company: row.col2 }),
+          body: JSON.stringify({ 
+            name: row.col1, 
+            company: row.col2,
+            prompt: prompt
+          }),
         }).then(res => res.json())
       ])
 
@@ -224,18 +228,17 @@ export default function Home() {
       if (perplexityData.error) throw new Error(perplexityData.error)
 
       // Both requests completed, now fetch RocketReach data
-      const rocketReachResponse = await fetch('/api/rocket-reach', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          url: profileData.rocketReachUrl,
-          name: row.col1,
-          company: row.col2
-        }),
-      })
-      const rocketReachData = await rocketReachResponse.json()
-      if (!rocketReachResponse.ok) {
-        throw new Error(rocketReachData.error || 'Failed to fetch RocketReach data')
+      let rocketReachData = null
+      if (profileData.rocketReachUrl) {
+        const historyResponse = await fetch('/api/history', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: profileData.rocketReachUrl })
+        })
+        const historyData = await historyResponse.json()
+        if (historyResponse.ok && !historyData.error) {
+          rocketReachData = historyData
+        }
       }
 
       // Update loading state for OpenAI
@@ -252,18 +255,18 @@ export default function Home() {
         return newRows
       })
 
-      // Process the combined data
+      // Process with OpenAI
       const processResponse = await fetch('/api/process-info', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          perplexityData,
-          rocketReachData,
+          perplexityData: perplexityData.info,
+          rocketReachData: rocketReachData || null,
           name: row.col1,
           company: row.col2
-        }),
+        })
       })
-      const processedData = await processResponse.json()
+      const processedData: ApiResponse = await processResponse.json()
       if (!processResponse.ok) {
         throw new Error(processedData.error || 'Failed to process information')
       }
