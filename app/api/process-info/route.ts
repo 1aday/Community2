@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
+// Data Interfaces
+// ------------------------------
 interface RocketReachData {
   metadata?: {
     'og:title'?: string;
@@ -35,12 +37,12 @@ interface RequestData {
   company: string;
 }
 
-// Type-safe environment variables
+// Environment Configuration
+// ------------------------------
 type Env = {
   OPENAI_API_KEY: string;
 }
 
-// Verify environment variables at runtime
 const getEnvVar = (key: keyof Env): string => {
   const value = process.env[key]
   if (!value) {
@@ -53,6 +55,8 @@ const openai = new OpenAI({
   apiKey: getEnvVar('OPENAI_API_KEY')
 })
 
+// Utility Functions
+// ------------------------------
 function cleanRocketReachData(data: string): string {
   return data
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
@@ -64,19 +68,27 @@ function cleanRocketReachData(data: string): string {
     .trim()
 }
 
+// Main Route Handler
+// ------------------------------
 export async function POST(req: Request) {
   try {
-    const { perplexityData, rocketReachData: originalRocketReachData, name, company }: RequestData = await req.json()
+    // Extract and validate request data
+    const { 
+      perplexityData, 
+      rocketReachData: originalRocketReachData, 
+      name, 
+      company 
+    }: RequestData = await req.json()
     
     console.log('Processing Info:')
     console.log('Perplexity Data:', perplexityData)
     
+    // Validate RocketReach data
     let rocketReachData: RocketReachData | null = originalRocketReachData
-
-    // Simple validation - just check if title contains name and company
     if (rocketReachData?.metadata) {
       const title = (rocketReachData.metadata['og:title'] || '').toLowerCase()
-      const hasName = name.toLowerCase().split(' ').every((part: string) => title.includes(part))
+      const hasName = name.toLowerCase().split(' ')
+        .every((part: string) => title.includes(part))
       const hasCompany = title.includes(company.toLowerCase())
 
       if (!hasName || !hasCompany) {
@@ -85,10 +97,13 @@ export async function POST(req: Request) {
       }
     }
 
-    // Access the markdown directly from the validated data
-    const cleanedRocketReachData = rocketReachData?.markdown ? cleanRocketReachData(rocketReachData.markdown) : ''
+    // Process RocketReach data
+    const cleanedRocketReachData = rocketReachData?.markdown 
+      ? cleanRocketReachData(rocketReachData.markdown) 
+      : ''
     console.log('Cleaned RocketReach Data:', cleanedRocketReachData)
 
+    // Generate OpenAI completion
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -105,7 +120,12 @@ export async function POST(req: Request) {
             "currentRole": "string",
             "keyAchievements": ["string"],
             "professionalBackground": "string",
-            "careerHistory": [{"title": "string", "company": "string", "duration": "string", "highlights": ["string"]}],
+            "careerHistory": [{
+              "title": "string",
+              "company": "string",
+              "duration": "string",
+              "highlights": ["string"]
+            }],
             "expertiseAreas": ["string"]
           }
           
@@ -132,17 +152,20 @@ export async function POST(req: Request) {
       temperature: 0.1
     })
 
+    // Process and return response
     const content = completion.choices[0].message.content
     if (!content) {
       throw new Error('OpenAI response missing content')
     }
 
-    // Parse the JSON response and wrap it in the expected structure
     const processedInfo = JSON.parse(content) as ProcessedInfo
     return NextResponse.json({ info: processedInfo })
 
   } catch (error) {
-    console.error("Error processing info:", error);
-    return NextResponse.json({ error: "Failed to process information" }, { status: 500 });
+    console.error("Error processing info:", error)
+    return NextResponse.json(
+      { error: "Failed to process information" }, 
+      { status: 500 }
+    )
   }
 } 
